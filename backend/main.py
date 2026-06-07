@@ -12,8 +12,6 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://localhost:3000/",
-    "http://localhost:3000/auth",
-    "http:localhost:3000/dashboard"
     "https://robertcare-front.onrender.com",     # 👈 Reemplaza con tu subdominio real de Render
     "https://robertcare-front.onrender.com/",    # 👈 Con y sin barra diagonal
 ]
