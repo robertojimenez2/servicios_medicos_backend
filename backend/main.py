@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Agrega aquí la URL de tu Localhost (para pruebas) y la URL que Render le dio a tu FRONTEND
 origins = [
     "http://localhost:3000",
     "https://tu-frontend-robertcare.onrender.com", 
@@ -11,7 +10,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # En desarrollo puedes usar ["*"] si deseas abrirlo a todos
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
