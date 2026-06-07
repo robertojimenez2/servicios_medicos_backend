@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# 🚀 IMPORTANTE: Importamos el router que tienes dentro de tu subcarpeta
 from src.health_math.router import router as health_router
 
 app = FastAPI(
@@ -10,26 +8,26 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 🌐 Configuración de CORS estricta y segura para producción y desarrollo local
+# 🌐 Coloca aquí tus URLs REALES. (Verifica la URL exacta de tu frontend en tu panel de Render)
 origins = [
     "http://localhost:3000",
     "http://localhost:3000/",
-    "https://tu-frontend-robertcare.onrender.com", 
-    "https://tu-frontend-robertcare.onrender.com/", 
+    "http://localhost:3000/auth",
+    "http:localhost:3000/dashboard"
+    "https://robertcare-front.onrender.com",     # 👈 Reemplaza con tu subdominio real de Render
+    "https://robertcare-front.onrender.com/",    # 👈 Con y sin barra diagonal
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    # allow_credentials=True,
+    allow_origins=origins,       # 👈 CAMBIADO: Usamos tu lista explícita en lugar de ["*"]
+    allow_credentials=True,      # 👈 RE-HABILITADO: Necesario para flujos con Next.js/Firebase
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🔗 Inyectamos las rutas de tu subcarpeta en la aplicación principal de FastAPI
 app.include_router(health_router)
 
-# Endpoint raíz de diagnóstico (Para verificar rápidamente en Render si la API responde)
 @app.get("/")
 def health_check():
     return {
@@ -40,7 +38,6 @@ def health_check():
 
 def main():
     import uvicorn
-    # Corre el servidor local apuntando al archivo actual
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 if __name__ == "__main__":
