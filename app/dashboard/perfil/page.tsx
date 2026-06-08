@@ -66,7 +66,7 @@ export default function EditarPerfilPage() {
     cargarDatosActuales();
   }, [user]);
 
-  const handleInputChange = (
+  const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
