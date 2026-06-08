@@ -455,6 +455,17 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+          <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-600">
+              ¿Eres Profesional de la Salúd?{" "}
+              <Link
+                href="/auth/login" // 👈 Cambia esto por la ruta real de tu login de pacientes
+                className="font-medium text-blue-600 hover:text-blue-500 hover:underline transition"
+              >
+                Inicia sesión aquí
+              </Link>
+            </p>
+          </div>
         </div>
       </main>
 

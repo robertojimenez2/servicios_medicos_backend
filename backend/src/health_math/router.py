@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, status, Query
 from . import schemas, services
 
 router = APIRouter(prefix="/health", tags=["health_math"])
@@ -31,8 +33,11 @@ def create_user_endpoint(user: schemas.UserCreate):
 
 
 @router.get("/users", response_model=list[schemas.UserRead])
-def get_users():
-    return services.list_users()
+def get_users(role: Optional[str] = Query(None, description="Filtrar usuarios por rol")):
+    """
+    Retorna la lista de usuarios. Puedes usar ?role=patient para traer solo pacientes.
+    """
+    return services.list_users(role=role)
 
 
 @router.post("/login") 
@@ -105,3 +110,40 @@ def create_scenario(s: schemas.HealthConditionScenarioCreate):
 def get_scenarios():
 	return services.list_scenarios()
 
+
+@router.post("/users/{uid}/comments", status_code=201)
+def create_patient_comment(uid: str, payload: schemas.MedicalCommentCreate, doctor_uid):
+    """
+    Endpoint para registrar un comentario, diagnóstico o recomendación médica 
+    dentro del expediente de un paciente específico.
+    """
+    # Pasamos el modelo convertido a diccionario de Python (.model_dump() en Pydantic v2)
+    resultado = services.add_medical_comment(uid, payload.model_dump(), doctor_uid)
+    return resultado
+
+@router.post("/auth/register-doctor/{uid}", status_code=201)
+def register_doctor(uid: str, payload: schemas.DoctorCreate):
+    """
+    Endpoint público para que los profesionales de la salud 
+    soliciten la creación de su cuenta en RobertCare.
+    """
+    return services.create_doctor_profile(uid, payload.model_dump())
+
+
+
+@router.patch("/admin/approve-doctor/{uid}", status_code=200)
+def authorize_doctor(uid: str, admin_uid: str = Query(...)):
+    """
+    Endpoint administrativo para aprobar las credenciales de un médico.
+    Mapeado para recibir admin_uid desde la URL (?admin_uid=...)
+    """
+    return services.approve_doctor_profile(uid, admin_uid)
+
+
+@router.get("/admin/pending-doctors", status_code=200)
+def list_pending_doctors(admin_uid: str = Query(...)):
+    """
+    Endpoint para que el Panel de Administración obtenga la lista de médicos por validar.
+    Mapeado para recibir admin_uid desde la URL (?admin_uid=...)
+    """
+    return services.get_pending_doctors(admin_uid)

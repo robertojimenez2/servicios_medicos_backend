@@ -27,6 +27,13 @@ export default function EditarPerfilPage() {
     smoking_habits: "no_smoker",
     alcohol_habits: "none",
     sleep_hours: "",
+    water_recomendation: "",
+    // medical_history: "",
+    systolic_bp: "",
+    diastolic_bp: "",
+    heart_rate: "",
+    oxygen_saturation: "",
+    temperature: "",
   });
 
   // 1. Cargar los datos actuales del usuario al entrar a la página
@@ -54,6 +61,12 @@ export default function EditarPerfilPage() {
             smoking_habits: data.smoking_habits || "no_smoker",
             alcohol_habits: data.alcohol_habits || "none",
             sleep_hours: data.sleep_hours?.toString() || "",
+            water_recomendation: data.water_recomendation || "",
+            systolic_bp: data.systolic_bp?.toString() || "",
+            diastolic_bp: data.diastolic_bp?.toString() || "",
+            heart_rate: data.heart_rate?.toString() || "",
+            oxygen_saturation: data.oxygen_saturation?.toString() || "",
+            temperature: data.temperature?.toString() || "",
           });
         }
       } catch (err) {
@@ -106,6 +119,21 @@ export default function EditarPerfilPage() {
             smoking_habits: formData.smoking_habits || "no_smoker",
             alcohol_habits: formData.alcohol_habits || "none",
             sleep_hours: formData.sleep_hours?.toString() || "",
+            systolic_bp: formData.systolic_bp
+              ? Number(formData.systolic_bp)
+              : null,
+            diastolic_bp: formData.diastolic_bp
+              ? Number(formData.diastolic_bp)
+              : null,
+            heart_rate: formData.heart_rate
+              ? Number(formData.heart_rate)
+              : null,
+            oxygen_saturation: formData.oxygen_saturation
+              ? Number(formData.oxygen_saturation)
+              : null,
+            temperature: formData.temperature
+              ? Number(formData.temperature)
+              : null,
           }),
         },
       );
@@ -418,6 +446,104 @@ export default function EditarPerfilPage() {
                 <option value="social">Consumo Moderado / Social</option>
                 <option value="frequent">Consumo Frecuente</option>
               </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario de Signos Vitales */}
+        <div className="border-t border-slate-100 pt-4 mt-2 space-y-3">
+          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            Triaje Clínico (Signos Vitales Actuales)
+          </h4>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label
+                className="text-[11px] font-bold text-slate-500 uppercase"
+                htmlFor="systolic_bp"
+              >
+                P. Sistólica (mmHg)
+              </label>
+              <input
+                type="number"
+                id="systolic_bp"
+                name="systolic_bp"
+                placeholder="Ej: 120"
+                value={formData.systolic_bp}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                className="text-[11px] font-bold text-slate-500 uppercase"
+                htmlFor="diastolic_bp"
+              >
+                P. Diastólica (mmHg)
+              </label>
+              <input
+                type="number"
+                id="diastolic_bp"
+                name="diastolic_bp"
+                placeholder="Ej: 80"
+                value={formData.diastolic_bp}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1 col-span-2 sm:col-span-1">
+              <label
+                className="text-[11px] font-bold text-slate-500 uppercase"
+                htmlFor="heart_rate"
+              >
+                Pulso (LPM)
+              </label>
+              <input
+                type="number"
+                id="heart_rate"
+                name="heart_rate"
+                placeholder="Ej: 72"
+                value={formData.heart_rate}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                className="text-[11px] font-bold text-slate-500 uppercase"
+                htmlFor="oxygen_saturation"
+              >
+                Oxigenación (SpO₂ %)
+              </label>
+              <input
+                type="number"
+                id="oxygen_saturation"
+                name="oxygen_saturation"
+                min="0"
+                max="100"
+                placeholder="Ej: 98"
+                value={formData.oxygen_saturation}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                className="text-[11px] font-bold text-slate-500 uppercase"
+                htmlFor="temperature"
+              >
+                Temperatura (°C)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                id="temperature"
+                name="temperature"
+                placeholder="Ej: 36.5"
+                value={formData.temperature}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
             </div>
           </div>
         </div>

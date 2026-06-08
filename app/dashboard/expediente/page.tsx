@@ -4,6 +4,16 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 
+// 🎯 NUEVA: Interfaz para validar los comentarios del médico
+interface MedicalCommentRead {
+  id?: string;
+  doctor_uid: string;
+  comment: string;
+  timestamp?: string;
+  date?: string;
+  doctor_name?: string;
+}
+
 interface HistorialPunto {
   mes: string;
   indice: number;
@@ -16,6 +26,8 @@ interface PerfilCompleto {
   email: string;
   age: number;
   countryCode: string;
+  date: string;
+  mes?: string;
   weight: number;
   height: number;
   gender: string;
@@ -30,7 +42,113 @@ interface PerfilCompleto {
   alcohol_habits?: string;
   sleep_hours?: number;
   water_recommendation?: number;
+  systolic_bp?: number;
+  diastolic_bp?: number;
+  heart_rate?: number;
+  oxygen_saturation?: number;
+  temperature?: number;
+  // 🎯 NUEVO: Campo inyectado por FastAPI
+  medical_comments?: MedicalCommentRead[];
 }
+
+// 🚦 Lógica de Semáforo para Presión Arterial (AHA)
+const evaluarPresion = (sys?: number, dia?: number) => {
+  if (!sys || !dia)
+    return {
+      label: "Sin Registro",
+      color: "text-slate-400 bg-slate-50 border-slate-200",
+    };
+  if (sys < 120 && dia < 80)
+    return {
+      label: "Óptima",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  if (sys >= 120 && sys <= 129 && dia < 80)
+    return {
+      label: "Elevada",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    };
+  if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89))
+    return {
+      label: "Hipertensión E1",
+      color: "text-orange-700 bg-orange-50 border-orange-200",
+    };
+  return {
+    label: "Hipertensión E2",
+    color: "text-red-700 bg-red-50 border-red-200",
+  };
+};
+
+// 🚦 Lógica de Semáforo para Oxigenación
+const evaluarOxigeno = (spo2?: number) => {
+  if (!spo2)
+    return {
+      label: "Sin Registro",
+      color: "text-slate-400 bg-slate-50 border-slate-200",
+    };
+  if (spo2 >= 95)
+    return {
+      label: "Normal",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  if (spo2 >= 90 && spo2 <= 94)
+    return {
+      label: "Hipoxia Leve",
+      color: "text-orange-700 bg-orange-50 border-orange-200",
+    };
+  return {
+    label: "Hipoxia Severa",
+    color: "text-red-700 bg-red-50 border-red-200 animate-pulse",
+  };
+};
+
+// 🚦 Lógica de Semáforo para Frecuencia Cardíaca
+const evaluarPulso = (lpm?: number) => {
+  if (!lpm)
+    return {
+      label: "Sin Registro",
+      color: "text-slate-400 bg-slate-50 border-slate-200",
+    };
+  if (lpm >= 60 && lpm <= 100)
+    return {
+      label: "Normal",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  if (lpm < 60)
+    return {
+      label: "Bradicardia",
+      color: "text-blue-700 bg-blue-50 border-blue-200",
+    };
+  return {
+    label: "Taquicardia",
+    color: "text-red-700 bg-red-50 border-red-200",
+  };
+};
+
+// 🚦 Lógica de Semáforo para Temperatura
+const evaluarTemperatura = (temp?: number) => {
+  if (!temp)
+    return {
+      label: "Sin Registro",
+      color: "text-slate-400 bg-slate-50 border-slate-200",
+    };
+  if (temp >= 36.0 && temp <= 37.3)
+    return {
+      label: "Normal",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  if (temp > 37.3 && temp <= 38.0)
+    return {
+      label: "Febrícula",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    };
+  if (temp > 38.0)
+    return { label: "Fiebre", color: "text-red-700 bg-red-50 border-red-200" };
+  return {
+    label: "Hipotermia",
+    color: "text-blue-700 bg-blue-50 border-blue-200",
+  };
+};
 
 export default function ExpedientePage() {
   const { user } = useAuth();
@@ -59,7 +177,6 @@ export default function ExpedientePage() {
     obtenerExpediente();
   }, [user]);
 
-  // 🟢 Función auxiliar para diagnosticar el rango de IMC según la OMS
   const obtenerDiagnosticoIMC = (imc: number) => {
     if (imc < 18.5)
       return {
@@ -147,7 +264,6 @@ export default function ExpedientePage() {
       {/* Grid Principal */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Bloque 1: Ficha de Identificación */}
-
         <div className="md:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
             Identificación
@@ -241,9 +357,114 @@ export default function ExpedientePage() {
             </div>
           </div>
 
+          {/* PANEL DE SIGNOS VITALES */}
+          <div className="space-y-2 pt-2">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+              Signos Vitales y Estado de Alerta
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Presión Arterial */}
+              {(() => {
+                const status = evaluarPresion(
+                  perfil.systolic_bp,
+                  perfil.diastolic_bp,
+                );
+                return (
+                  <div className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col justify-between shadow-sm">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      Presión Art.
+                    </p>
+                    <p className="text-xl font-black text-slate-700 my-1">
+                      {perfil.systolic_bp && perfil.diastolic_bp
+                        ? `${perfil.systolic_bp}/${perfil.diastolic_bp}`
+                        : "---"}{" "}
+                      <span className="text-[10px] font-normal text-slate-400">
+                        mmHg
+                      </span>
+                    </p>
+                    <span
+                      className={`text-[9px] font-bold text-center px-1.5 py-0.5 rounded-md border ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Frecuencia Cardíaca */}
+              {(() => {
+                const status = evaluarPulso(perfil.heart_rate);
+                return (
+                  <div className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col justify-between shadow-sm">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      Frec. Cardíaca
+                    </p>
+                    <p className="text-xl font-black text-slate-700 my-1">
+                      {perfil.heart_rate || "---"}{" "}
+                      <span className="text-[10px] font-normal text-slate-400">
+                        LPM
+                      </span>
+                    </p>
+                    <span
+                      className={`text-[9px] font-bold text-center px-1.5 py-0.5 rounded-md border ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Saturación de Oxígeno */}
+              {(() => {
+                const status = evaluarOxigeno(perfil.oxygen_saturation);
+                return (
+                  <div className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col justify-between shadow-sm">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      Saturación SpO₂
+                    </p>
+                    <p className="text-xl font-black text-slate-700 my-1">
+                      {perfil.oxygen_saturation || "---"}{" "}
+                      <span className="text-[10px] font-normal text-slate-400">
+                        %
+                      </span>
+                    </p>
+                    <span
+                      className={`text-[9px] font-bold text-center px-1.5 py-0.5 rounded-md border ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Temperatura */}
+              {(() => {
+                const status = evaluarTemperatura(perfil.temperature);
+                return (
+                  <div className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col justify-between shadow-sm">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      Temperatura
+                    </p>
+                    <p className="text-xl font-black text-slate-700 my-1">
+                      {perfil.temperature ? `${perfil.temperature}°` : "---"}{" "}
+                      <span className="text-[10px] font-normal text-slate-400">
+                        C
+                      </span>
+                    </p>
+                    <span
+                      className={`text-[9px] font-bold text-center px-1.5 py-0.5 rounded-md border ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
           {/* Tasas de Gasto Energético */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+            <div className="p-4 border border-slate-100 bg-linear-to-br from-slate-50 to-white rounded-xl">
               <p className="text-xs font-bold text-slate-400 uppercase">
                 Metabolismo Basal (TMB)
               </p>
@@ -257,7 +478,7 @@ export default function ExpedientePage() {
                 Gasto mínimo de supervivencia celular.
               </p>
             </div>
-            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+            <div className="p-4 border border-slate-100 bg-linear-to-br from-slate-50 to-white rounded-xl">
               <p className="text-xs font-bold text-slate-400 uppercase">
                 Gasto Diario Total (GETD)
               </p>
@@ -275,7 +496,52 @@ export default function ExpedientePage() {
         </div>
       </div>
 
-      {/* Bloque 3: Tabla de Historial Clínico Manual */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+          🩺 Notas de Evolución e Indicaciones Clínicas
+        </h3>
+
+        <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 mt-2">
+          {perfil.medical_comments && perfil.medical_comments.length > 0 ? (
+            [...perfil.medical_comments].reverse().map((commentItem, idx) => (
+              <div key={commentItem.id || idx} className="relative group">
+                {/* Indicador de Nodo en la Línea de Tiempo */}
+                <span className="absolute -left-31px top-1 bg-indigo-50 border-2 border-indigo-400 h-3 w-3 rounded-full group-hover:bg-indigo-400 transition-colors" />
+
+                <div className="bg-slate-50/70 hover:bg-slate-50 p-4 rounded-xl border border-slate-100/80 transition-all">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <p className="text-xs font-bold text-indigo-700">
+                        {commentItem.doctor_name ||
+                          "Médico Especialista Certificado"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        Cédula de Validación: {commentItem.doctor_uid}
+                        ...
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 shadow-xs">
+                      {commentItem.date || "Control Clínico"}
+                    </span>
+                  </div>
+
+                  {/* Cuerpo del comentario médico */}
+                  <p className="text-sm text-slate-700 font-medium mt-2.5 leading-relaxed whitespace-pre-wrap">
+                    {commentItem.comment}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-6 text-slate-400 italic text-xs -ml-6">
+              👨‍⚕️ Aún no cuentas con prescripciones o comentarios añadidos por tu
+              médico en el sistema.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bloque: Tabla de Historial Clínico Manual */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-3 mb-4">
           Bitácora y Cronología de Consultas (Historial de Peso)
@@ -292,7 +558,6 @@ export default function ExpedientePage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {perfil.history && perfil.history.length > 0 ? (
-                // Invertimos el array para mostrar los registros más recientes primero
                 [...perfil.history].reverse().map((item, index) => {
                   const diagItem = obtenerDiagnosticoIMC(item.indice);
                   return (
@@ -301,7 +566,12 @@ export default function ExpedientePage() {
                       className="hover:bg-slate-50/50 transition-colors"
                     >
                       <td className="py-3 px-4 font-medium text-slate-600">
-                        Registro Clínico — {item.mes}
+                        <span className="block text-xs font-bold text-slate-700">
+                          {item.date || "Fecha desconocida"}
+                        </span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5">
+                          Peso reg: {item.weight} kg
+                        </span>
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-slate-700">
                         {item.indice}
@@ -330,9 +600,8 @@ export default function ExpedientePage() {
           </table>
         </div>
       </div>
-      {/* 📂 Busca el final del "Bloque 1: Ficha de Identificación" e inserta esta tarjeta abajo: */}
 
-      {/* 🎯 NUEVO Bloque: Antecedentes Patológicos / Historial de Enfermedades */}
+      {/* Bloque: Antecedentes Patológicos */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
         <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
           Antecedentes Patológicos
@@ -351,28 +620,25 @@ export default function ExpedientePage() {
             </div>
           ) : (
             <p className="text-slate-400 italic text-xs">
-              No se registran patologías, enfermedades crónicas o alergias
+              No se registran patologías, enfermedades crónicas o allergies
               activas en este paciente.
             </p>
           )}
         </div>
       </div>
-      {/* 📂 En expediente/page.tsx, busca el final de la tarjeta de "Antecedentes Patológicos" (que agregamos antes) y coloca esta tarjeta justo abajo: */}
 
-      {/* 🎯 NUEVO Bloque: Antecedentes No Patológicos / Estilo de Vida */}
+      {/* Bloque: Antecedentes No Patológicos / Estilo de Vida */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
           <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider">
             🌱 Estilo de Vida y Hábitos
           </h3>
-          {/* 🩸 Badge de Tipo de Sangre con diseño de alta visibilidad */}
           <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase">
             Sangre: {perfil.blood_type || "S/N"}
           </span>
         </div>
 
         <div className="space-y-3 text-sm">
-          {/* Descanso */}
           <div className="flex justify-between items-center py-1 border-b border-slate-50">
             <span className="text-xs text-slate-400 font-medium">
               Descanso Diario:
@@ -382,7 +648,6 @@ export default function ExpedientePage() {
             </span>
           </div>
 
-          {/* Tabaquismo */}
           <div className="flex justify-between items-center py-1 border-b border-slate-50">
             <span className="text-xs text-slate-400 font-medium">
               Tabaquismo:
@@ -396,7 +661,6 @@ export default function ExpedientePage() {
             </span>
           </div>
 
-          {/* Alcoholismo */}
           <div className="flex justify-between items-center py-1 border-b border-slate-50">
             <span className="text-xs text-slate-400 font-medium">
               Consumo Alcohol:
@@ -410,7 +674,6 @@ export default function ExpedientePage() {
             </span>
           </div>
 
-          {/* Hidratación calculada mecánicamente */}
           <div className="mt-2 p-3 bg-blue-50/40 rounded-xl border border-blue-100/40 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
