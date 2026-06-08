@@ -186,7 +186,7 @@ export default function EditarPerfilPage() {
             name="name"
             required
             value={formData.name}
-            onChange={handleInputChange}
+            onChange={handleChange}
             className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -208,7 +208,7 @@ export default function EditarPerfilPage() {
               min="1"
               max="120"
               value={formData.age}
-              onChange={handleInputChange}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -227,7 +227,7 @@ export default function EditarPerfilPage() {
               maxLength={3}
               placeholder="MX"
               value={formData.countryCode}
-              onChange={handleInputChange}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -250,7 +250,7 @@ export default function EditarPerfilPage() {
               step="0.1"
               min="10"
               value={formData.weight}
-              onChange={handleInputChange}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -268,7 +268,7 @@ export default function EditarPerfilPage() {
               required
               min="40"
               value={formData.height}
-              onChange={handleInputChange}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -286,7 +286,7 @@ export default function EditarPerfilPage() {
             id="gender"
             name="gender"
             value={formData.gender}
-            onChange={handleInputChange}
+            onChange={handleChange}
             className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100"
           >
             <option value="male">Masculino</option>
@@ -306,7 +306,7 @@ export default function EditarPerfilPage() {
             id="activityLevel"
             name="activityLevel"
             value={formData.activityLevel}
-            onChange={handleInputChange}
+            onChange={handleChange}
             className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100"
           >
             <option value="sedentary">
@@ -338,7 +338,7 @@ export default function EditarPerfilPage() {
                 id="blood_type"
                 name="blood_type"
                 value={formData.blood_type}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
               >
                 <option value="No Especificado">No Especificado</option>
@@ -369,7 +369,7 @@ export default function EditarPerfilPage() {
                 max="24"
                 placeholder="Ej: 7"
                 value={formData.sleep_hours}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
               />
             </div>
@@ -388,7 +388,7 @@ export default function EditarPerfilPage() {
                 id="smoking_habits"
                 name="smoking_habits"
                 value={formData.smoking_habits}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
               >
                 <option value="no_smoker">No fumador</option>
@@ -409,7 +409,7 @@ export default function EditarPerfilPage() {
                 id="alcohol_habits"
                 name="alcohol_habits"
                 value={formData.alcohol_habits}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
               >
                 <option value="none">Abstemia total</option>
@@ -433,7 +433,7 @@ export default function EditarPerfilPage() {
             rows={3}
             placeholder="Ej. Hipertensión controlada, Alergia a la penicilina, Asma infantil..."
             value={formData.medical_history}
-            onChange={handleInputChange}
+            onChange={handleChange}
             className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
           />
           <p className="text-[10px] text-slate-400 italic">
