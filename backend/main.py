@@ -11,8 +11,8 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://localhost:3000/",
-    "https://robertcare-front.onrender.com",     
-    "https://robertcare-front.onrender.com/",    
+    "https://servicios-medicos-frontend.onrender.com/",     
+    "https://servicios-medicos-frontend.onrender.com",    
 ]
 
 app.add_middleware(
