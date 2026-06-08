@@ -7,9 +7,8 @@ import ThemeToggle from "../components/ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 
 export default function AuthPage() {
-  // 1. LAS DECLARACIONES DE HOOKS VAN AQUÍ (En la raíz del componente)
   const router = useRouter();
-  const { loginCentral } = useAuth(); // 🎯 ¡AQUÍ ES DONDE DEBE ESTAR!
+  const { loginCentral } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
@@ -22,15 +21,22 @@ export default function AuthPage() {
     edad: "",
     countryCode: "",
     confirmPassword: "",
+    // 🎯 NUEVAS VARIABLES MÉDICAS
+    weight: "",
+    height: "",
+    gender: "male",
+    activityLevel: "sedentary",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Modificado para soportar select e inputs comunes sin problemas de tipos
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errorMsg) setErrorMsg("");
   };
 
-  // 2. EL MANEJADOR DE EVENTOS (Aquí NO se declaran hooks, solo se usan sus variables)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -47,7 +53,55 @@ export default function AuthPage() {
 
     try {
       if (activeTab === "register") {
-        // ... (Tu código de registro directo a FastAPI que ya tenías)
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+        console.log(
+          "Enviando datos médicos y de registro a FastAPI...",
+          formData,
+        );
+
+        const response = await fetch(`${apiUrl}/health/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email.trim().toLowerCase(),
+            hashedPassword: formData.password,
+            name: formData.nombre,
+            age: Number(formData.edad),
+            countryCode: formData.countryCode || null,
+            weight: Number(formData.weight),
+            height: Number(formData.height),
+            gender: formData.gender,
+            activityLevel: formData.activityLevel,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Detalle del 422 o error de FastAPI:", errorData);
+          throw new Error(
+            errorData.detail
+              ? JSON.stringify(errorData.detail)
+              : "Error en el formato de registro.",
+          );
+        }
+
+        const data = await response.json();
+        console.log("¡Usuario registrado con éxito!", data);
+
+        if (data.email) {
+          loginCentral({
+            uid: data.uid || data.email,
+            email: data.email,
+            name: data.name,
+          });
+        }
+
+        router.push("/dashboard");
+        return;
       }
 
       if (activeTab === "login") {
@@ -73,7 +127,6 @@ export default function AuthPage() {
         const data = await response.json();
         console.log("¡Logueado con éxito mediante FastAPI!", data);
 
-        // 🎯 AQUÍ SOLO USAS LA FUNCIÓN (Ya no lleva el "const { ... } = useAuth()")
         if (data.user) {
           loginCentral(data.user);
         }
@@ -82,7 +135,7 @@ export default function AuthPage() {
         return;
       }
     } catch (error: any) {
-      // ... (Tus catch de errores normales)
+      setErrorMsg(error.message || "Ocurrió un error inesperado.");
     } finally {
       setLoading(false);
     }
@@ -180,47 +233,146 @@ export default function AuthPage() {
                   />
                 </div>
 
-                {/* País */}
-                <div className="space-y-1">
-                  <label
-                    className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
-                    htmlFor="countryCode"
-                  >
-                    País
-                  </label>
-                  <input
-                    type="text"
-                    id="countryCode"
-                    name="countryCode"
-                    required
-                    value={formData.countryCode}
-                    onChange={handleInputChange}
-                    placeholder="MX"
-                    maxLength={3}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                {/* Grid para Fisiología Básica */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* País */}
+                  <div className="space-y-1">
+                    <label
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                      htmlFor="countryCode"
+                    >
+                      País
+                    </label>
+                    <input
+                      type="text"
+                      id="countryCode"
+                      name="countryCode"
+                      required
+                      value={formData.countryCode}
+                      onChange={handleInputChange}
+                      placeholder="MX"
+                      maxLength={3}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Edad */}
+                  <div className="space-y-1">
+                    <label
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                      htmlFor="edad"
+                    >
+                      Edad
+                    </label>
+                    <input
+                      type="number"
+                      id="edad"
+                      name="edad"
+                      required
+                      value={formData.edad}
+                      onChange={handleInputChange}
+                      placeholder="20"
+                      min={1}
+                      max={120}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
 
-                {/* Edad */}
+                {/* Grid para Métricas Clínicas (Peso y Altura) */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Peso */}
+                  <div className="space-y-1">
+                    <label
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                      htmlFor="weight"
+                    >
+                      Peso (kg)
+                    </label>
+                    <input
+                      type="number"
+                      id="weight"
+                      name="weight"
+                      required
+                      value={formData.weight}
+                      onChange={handleInputChange}
+                      placeholder="70"
+                      step="0.1"
+                      min={10}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Altura */}
+                  <div className="space-y-1">
+                    <label
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                      htmlFor="height"
+                    >
+                      Altura (cm)
+                    </label>
+                    <input
+                      type="number"
+                      id="height"
+                      name="height"
+                      required
+                      value={formData.height}
+                      onChange={handleInputChange}
+                      placeholder="175"
+                      min={50}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Género Biológico */}
                 <div className="space-y-1">
                   <label
                     className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
-                    htmlFor="edad"
+                    htmlFor="gender"
                   >
-                    Edad
+                    Género Asignado al Nacer
                   </label>
-                  <input
-                    type="number"
-                    id="edad"
-                    name="edad"
-                    required
-                    value={formData.edad}
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
                     onChange={handleInputChange}
-                    placeholder="20"
-                    min={1}
-                    max={120}
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="male">Masculino</option>
+                    <option value="female">Femenino</option>
+                  </select>
+                </div>
+
+                {/* Actividad Física */}
+                <div className="space-y-1">
+                  <label
+                    className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                    htmlFor="activityLevel"
+                  >
+                    Nivel de Actividad Física
+                  </label>
+                  <select
+                    id="activityLevel"
+                    name="activityLevel"
+                    value={formData.activityLevel}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="sedentary">
+                      Sedentario (Poco o nada de ejercicio)
+                    </option>
+                    <option value="light">
+                      Ligero (Ejercicio 1-3 días/semana)
+                    </option>
+                    <option value="moderate">
+                      Moderado (Ejercicio 3-5 días/semana)
+                    </option>
+                    <option value="active">
+                      Intenso (Ejercicio 6-7 días/semana)
+                    </option>
+                  </select>
                 </div>
               </>
             )}

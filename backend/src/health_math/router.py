@@ -1,26 +1,26 @@
 from fastapi import APIRouter, HTTPException, status
-
 from . import schemas, services
 
 router = APIRouter(prefix="/health", tags=["health_math"])
 
 
-@router.post("/users/{uid}", response_model=schemas.UserRead)
-def create_user_endpoint(uid: str, user: schemas.UserCreate):
+@router.post("/users", response_model=schemas.UserRead)
+def create_user_endpoint(user: schemas.UserCreate):
     try:
         from src.health_math.services import _db
-        db = _db()
+        db = _db()  
         
-        doc_id = uid.strip().lower()
+        doc_id = user.email.strip().lower()
         
-        # Verificación en Firestore
-        if db.collection("usuarios").document(doc_id).get().exists:
+        # Verificación inicial en Firestore
+        if db.collection("users").document(doc_id).get().exists:
             raise HTTPException(status_code=400, detail="El usuario ya existe.")
             
-        return services.create_user(uid=doc_id, data=user)
+        return services.create_user_endpoint(user)
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        # 🔥 ESTO VA A IMPRIMIR LA LÍNEA EXACTA DONDE SE ROMPE PYTHON
         import traceback
         print("\n" + "🚨" * 20)
         print("❌ DETALLE DEL ERROR REAL EN EL BACKEND:")
@@ -32,16 +32,38 @@ def create_user_endpoint(uid: str, user: schemas.UserCreate):
 
 @router.get("/users", response_model=list[schemas.UserRead])
 def get_users():
-	return services.list_users()
+    return services.list_users()
 
-@router.post("/login") # 👈 Quitamos el response_model conflictivo
-def get_login(credentials: schemas.LoginRequest): # 👈 🎯 FIJADO: Ahora FastAPI sabe qué validar
+
+@router.post("/login") 
+def get_login(credentials: schemas.LoginRequest): 
     return services.get_login(credentials)
+
+@router.put("/users/{uid}")
+def update_user(uid: str, payload: dict):
+    """
+    Actualiza los datos del usuario y recalcula instantáneamente sus índices de salud.
+    """
+    return services.update_user_profile(uid, payload)
+
+@router.post("/users/{uid}/weight-log")
+def log_user_weight(uid: str, payload: dict):
+    """
+    Registra una nueva lectura de peso para el historial del usuario.
+    Payload esperado: {"weight": 72.5}
+    """
+    weight = payload.get("weight")
+    if not weight:
+        raise HTTPException(status_code=400, detail="El campo 'weight' es obligatorio.")
+        
+    return services.add_weight_log(uid, float(weight))
+
 
 @router.get("/users/{uid}", response_model=schemas.UserRead)
 def get_user_by_uid(uid: str):
-	return services.get_user_by_uid(uid)
+    return services.get_user_by_uid(uid)
 
+# ... (El resto de tus rutas de pólizas, simulaciones, etc., se quedan intactas)
 
 @router.post("/policies", response_model=schemas.InsurancePolicyRead)
 def create_policy(policy: schemas.InsurancePolicyCreate):
