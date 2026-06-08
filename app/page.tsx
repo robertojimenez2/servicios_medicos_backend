@@ -1,8 +1,16 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import ThemeToggle from "./components/ThemeToggle";
+import Navbar from "./components/Navbar";
 
 export default function LandingPage() {
-  // Datos de los 4 seguros para mostrar consistencia en la información
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
   const segurosInformativos = [
     {
       id: 1,
@@ -12,7 +20,7 @@ export default function LandingPage() {
       coaseguro: "10%",
       ventaja:
         "Cobertura total en accidentes y consultas preventivas digitales.",
-      color: "border-t-teal-500",
+      topBorderColor: "border-t-teal-500",
     },
     {
       id: 2,
@@ -22,7 +30,7 @@ export default function LandingPage() {
       coaseguro: "10% (Topado)",
       ventaja:
         "Incluye maternidad, pediatría y red hospitalaria de nivel medio.",
-      color: "border-t-blue-600",
+      topBorderColor: "border-t-blue-600",
     },
     {
       id: 3,
@@ -33,7 +41,7 @@ export default function LandingPage() {
       coaseguro: "15%",
       ventaja:
         "Acceso a tratamientos de alta especialidad y medicamentos oncológicos.",
-      color: "border-t-purple-600",
+      topBorderColor: "border-t-purple-600",
     },
     {
       id: 4,
@@ -43,151 +51,123 @@ export default function LandingPage() {
       coaseguro: "20% (Con tope bajo)",
       ventaja:
         "Enfocado en geriatría, rehabilitación física y cuidados en casa.",
-      color: "border-t-amber-500",
+      topBorderColor: "border-t-amber-500",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-500 selection:text-white">
-      {/* 1. NAVBAR BÁSICO */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 transition-all">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-          <span className="text-xl font-black text-blue-800 tracking-tight">
-            RobertCare
-          </span>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/auth"
-              className="text-sm font-semibold text-slate-600 hover:text-blue-800 transition-colors"
-            >
-              Iniciar Sesión
-            </Link>
-            <Link
-              href="/auth"
-              className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
-            >
-              Registrarme gratis
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* 2. ENCABEZADO GRANDE IMPRESIONANTE (HERO SECTION) */}
-      <header className="relative bg-white border-b border-slate-200 overflow-hidden py-20 lg:py-32 animate-hero">
-        {/* Fondo decorativo sutil para dar impacto visual sin arruinar el contraste */}
-        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] opacity-70"></div>
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-100 rounded-full blur-3xl opacity-50"></div>
-
-        <div className="relative max-w-5xl mx-auto px-6 text-center space-y-8">
-          {/* Nombre RobertCare con diseño masivo y gradiente */}
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight text-slate-900 leading-none reveal-2">
+    // FONDO GLOBAL: Blanco absoluto en día / Slate-950 en noche
+    <div className="min-h-screen bg-white dark:bg-slate-955 font-sans text-black dark:text-slate-300 transition-colors duration-500 overflow-x-hidden">
+      {/* NAVBAR (Sincronizado con fondos claros/oscuros y sombras limpias) */}
+      <Navbar />
+      {/* HERO */}
+      <header className="relative bg-white dark:bg-slate-955 border-b border-slate-100 dark:border-slate-900 py-24 lg:py-32 transition-colors duration-500">
+        <div className="max-w-4xl mx-auto px-6 text-center space-y-6 text-black">
+          <h1
+            className={`text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight text-black dark:text-white leading-none transition-all duration-1500 ease-out transform ${
+              isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+            }`}
+          >
             Tu salud no debería quebrar tus finanzas. <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-700 to-green-700">
+            <span className="inline-block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:to-indigo-500">
               RobertCare
             </span>
           </h1>
 
-          <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 font-medium leading-relaxed reveal-3">
+          <p
+            className={`max-w-2xl mx-auto text-xl text-black/90 dark:text-slate-400 font-medium leading-relaxed transition-all duration-1500 ease-out delay-200 transform ${
+              isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+            }`}
+          >
             La primera plataforma de ingeniería de software médica orientada a
             desmitificar tus pólizas de seguro. Simula riesgos, calcula
             deducibles y toma el control.
           </p>
-
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4 reveal-4">
-            <a
-              href="#seguros"
-              className="w-full sm:w-auto px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white text-base font-bold rounded-xl shadow-lg shadow-slate-900/10 transition-all text-center cursor-pointer"
-            >
-              Conocer Coberturas ↓
-            </a>
-            <Link
-              href="/auth"
-              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-blue-700 border-2 border-blue-100 text-base font-bold rounded-xl transition-all text-center"
-            >
-              Probar el Simulador →
-            </Link>
-          </div>
         </div>
       </header>
 
-      {/* 3. SECCIÓN DE LOS 4 SEGUROS */}
+      {/* SEGUROS */}
       <section
         id="seguros"
-        className="max-w-7xl mx-auto px-6 py-20 space-y-12滚动"
+        className="max-w-7xl mx-auto px-6 py-24 space-y-16 bg-white dark:bg-slate-955 transition-colors duration-500"
       >
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl tracking-tight">
+          <h2 className="text-4xl font-black text-black dark:text-white tracking-tight">
             Explora las Coberturas Disponibles
           </h2>
-          <p className="text-base sm:text-lg text-slate-600">
+          <p className="text-lg text-black/70 dark:text-slate-500 font-medium">
             Nuestra lógica de simulación analiza estos cuatro perfiles base para
             proyectar tus gastos médicos máximos de bolsillo.
           </p>
         </div>
 
-        {/* Grid de Tarjetas Consistentes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* REJILLA DE TARJETAS BLANCAS CON SHADOW-BOX Y BORDE SUPERIOR DE COLOR */}
+        {/* GRID DE TARJETAS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {segurosInformativos.map((seguro) => (
             <div
               key={seguro.id}
-              className={`card-anim group transform-gpu bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between transition-all hover:shadow-md hover:-translate-y-1 border-t-4 ${seguro.color}`}
+              // 1. Añadimos h-full para asegurar que todas llenen la altura de la cuadrícula
+              className={`
+                card-anim group bg-white dark:bg-slate-900 rounded-2xl p-6 flex flex-col h-full
+                border-t-4 ${seguro.topBorderColor} border-x border-b border-slate-200 dark:border-slate-800
+                text-black dark:text-white
+              `}
             >
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-slate-900">
+              {/* 2. Cabecera de la tarjeta: Título y descripción (Se queda arriba) */}
+              <div>
+                <h3 className="text-lg font-black tracking-tight mb-3">
                   {seguro.nombre}
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-sm font-bold leading-relaxed text-black/90 dark:text-slate-400">
                   {seguro.enfoque}
                 </p>
+              </div>
 
-                <hr className="border-slate-100" />
+              {/* 3. El bloque inferior: Lo empujamos hacia abajo con mt-auto */}
+              <div className="mt-auto flex flex-col">
+                <hr className="border-slate-200 dark:border-slate-800 my-5" />
 
-                {/* Datos técnicos presentados de forma ultra-limpia */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-slate-400">Deducible Base:</span>
-                    <span className="text-slate-900 font-bold">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-black/60 dark:text-slate-500">
+                      Deducible Base:
+                    </span>
+                    <span className="font-black bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                       {seguro.deducible}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-slate-400">Coaseguro:</span>
-                    <span className="text-slate-900 font-bold">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-black/60 dark:text-slate-500">
+                      Coaseguro:
+                    </span>
+                    <span className="font-black bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                       {seguro.coaseguro}
                     </span>
                   </div>
                 </div>
 
-                <hr className="border-slate-100" />
+                <hr className="border-slate-200 dark:border-slate-800 my-5" />
 
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <span className="block text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-0.5">
+                {/* 4. Ventaja clave: Parallax interno sutil al hacer hover */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 transition-transform duration-300 group-hover:-translate-y-1">
+                  <span className="inline-block text-[9px] font-black uppercase tracking-widest mb-1.5 px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
                     Ventaja Clave
                   </span>
-                  <p className="text-xs text-slate-600 font-medium">
+                  <p className="text-xs font-bold leading-relaxed text-black dark:text-slate-300">
                     {seguro.ventaja}
                   </p>
                 </div>
-              </div>
-
-              <div className="mt-6 pt-2">
-                <Link
-                  href="/auth"
-                  className="block w-full text-center py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg transition-colors"
-                >
-                  Simular Escenario Financiero
-                </Link>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* FOOTER ACCESIBLE */}
-      <footer className="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-400 font-medium">
+      {/* FOOTER */}
+      <footer className="bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900 py-10 text-center text-xs text-black dark:text-slate-600 font-bold">
         © 2026 RobertCare. Proyecto Abierto de Ingeniería en Software y
-        Financiera.
+        Previsión Financiera.
       </footer>
     </div>
   );

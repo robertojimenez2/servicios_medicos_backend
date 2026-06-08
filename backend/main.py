@@ -8,18 +8,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 🌐 Coloca aquí tus URLs REALES. (Verifica la URL exacta de tu frontend en tu panel de Render)
 origins = [
     "http://localhost:3000",
     "http://localhost:3000/",
-    "https://robertcare-front.onrender.com",     # 👈 Reemplaza con tu subdominio real de Render
-    "https://robertcare-front.onrender.com/",    # 👈 Con y sin barra diagonal
+    "https://robertcare-front.onrender.com",     
+    "https://robertcare-front.onrender.com/",    
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # 👈 CAMBIADO: Usamos tu lista explícita en lugar de ["*"]
-    allow_credentials=True,      # 👈 RE-HABILITADO: Necesario para flujos con Next.js/Firebase
+    allow_origins=origins,       
+    allow_credentials=True,      #
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -5,15 +5,22 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
+	uid: str
 	email: EmailStr
 	hashedPassword: str = Field(..., alias="hashedPassword")
+	name: str
 	age: int
 	countryCode: Optional[str] = None
 
+class LoginRequest(BaseModel):
+	email:str
+	password:str
 
 class UserRead(BaseModel):
+	uid:str
 	email: EmailStr
 	age: int
+	name: str
 	countryCode: Optional[str] = None
 	createdAt: datetime
 

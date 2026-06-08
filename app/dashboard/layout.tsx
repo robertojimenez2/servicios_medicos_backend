@@ -1,70 +1,90 @@
-import React from "react";
-import Link from "next/link";
+"use client";
+
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  // 🔒 Protección de ruta a nivel de Layout
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+        <p className="text-blue-600 font-medium animate-pulse">
+          Cargando panel...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Barra de Navegación Superior Consistente */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center gap-8">
-              {/* Logo / Identidad */}
-              <Link
-                href="/dashboard"
-                className="text-xl font-black text-blue-800 tracking-tight"
-              >
-                SanaPrevisión
-              </Link>
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
+      {/* 1. BARRA LATERAL (Sidebar) */}
+      <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-4 hidden md:flex">
+        <div>
+          <div className="p-2 mb-6">
+            <h1 className="text-xl font-bold text-white tracking-wide">
+              RobertCare
+            </h1>
+            <p className="text-xs text-slate-400">Panel de Control Médico</p>
+          </div>
 
-              {/* Menú Principal Accesible */}
-              <div className="hidden md:flex space-x-1">
-                <Link
-                  href="/dashboard"
-                  className="px-4 py-2 rounded-lg text-sm font-bold text-blue-700 bg-blue-50"
-                >
-                  Mi Panel
-                </Link>
-                <Link
-                  href="/dashboard/simulador"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-700 hover:bg-slate-50 transition-colors"
-                >
-                  Simulador de Riesgo
-                </Link>
-                <Link
-                  href="/dashboard/Historial"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-700 hover:bg-slate-50 transition-colors"
-                >
-                  Historial Médico
-                </Link>
-              </div>
+          <nav className="space-y-1">
+            <a
+              href="/dashboard"
+              className="flex items-center space-x-3 px-3 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-medium"
+            >
+              <span>🏠</span> <span>Inicio</span>
+            </a>
+            <a
+              href="/dashboard/expediente"
+              className="flex items-center space-x-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <span>📊</span> <span>Métricas de Salud</span>
+            </a>
+          </nav>
+        </div>
+
+        {/* Botón de cerrar sesión al fondo */}
+        <button
+          onClick={logout}
+          className="w-full flex items-center space-x-3 px-3 py-2.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 rounded-lg text-sm font-medium transition-colors"
+        >
+          <span>🚪</span> <span>Cerrar Sesión</span>
+        </button>
+      </aside>
+
+      {/* 2. CONTENEDOR PRINCIPAL */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {/* Navbar Superior Móvil / Usuario */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+          <button className="md:hidden text-slate-600 text-xl">☰</button>
+          <div className="ml-auto flex items-center space-x-3">
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Paciente activo</p>
+              <p className="text-sm font-medium text-slate-700">{user.email}</p>
             </div>
-
-            {/* Perfil de Usuario / Cerrar Sesión */}
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-900">Juan Pérez</p>
-                <p className="text-xs text-slate-500">Plan Personal</p>
-              </div>
-              <Link
-                href="/auth"
-                className="text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                Salir
-              </Link>
+            <div className="h-9 w-9 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm">
+              {user.email?.[0].toUpperCase()}
             </div>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {/* Contenido Dinámico de las Páginas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {children}
-      </main>
+        {/* Renderizado de las páginas hijas */}
+        <main className="p-6 md:p-8">{children}</main>
+      </div>
     </div>
   );
 }
