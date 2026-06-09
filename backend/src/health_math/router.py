@@ -197,19 +197,7 @@ def get_patient_secure_profile(patient_uid: str, doctor_uid: str = Query(...)):
         
     return services.get_user_by_uid(patient_uid)
 
-@router.post("/users", response_model=schemas.UserRead)
-def create_user_endpoint(user: schemas.UserCreate):
-    try:
-        # Llamamos directamente a la función de tu service pasándole los datos validados
-        user_data = services.create_user_endpoint(user)
-        return user_data
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al registrar el usuario en el sistema: {str(e)}"
-        )
+
 
 @router.get("/users/{uid}/expediente-pdf", status_code=status.HTTP_200_OK)
 def descargar_expediente_pdf_doctor(uid: str):

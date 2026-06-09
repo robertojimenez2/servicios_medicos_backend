@@ -56,7 +56,6 @@ export default function SimuladorSeguroPage() {
           else if (data.imc >= 25) factorIMC = 1.15;
 
           let factorTabaco = 1.0;
-          // Soporte híbrido para boolean o enum string según la BD
           const esFumador =
             data.smoker ||
             data.smoking_habits === "active" ||
@@ -77,16 +76,14 @@ export default function SimuladorSeguroPage() {
           setPrimaMensual(Math.round(totalPrima * 100) / 100);
 
           // ==========================================
-          // 2. MODELO DE RIESGO: PROBABILIDAD DE MUERTE ANUALIZADA (%)
+          // 2. MODELO DE RIESGO: PROBABILIDAD DE MUERTE (%)
           // ==========================================
-          // Tasa base biológica por envejecimiento natural (Gompertz-like approximation)
-          let probabilidadBase = 0.1; // 0.1% base para jóvenes saludables
+          let probabilidadBase = 0.1;
           if (data.age >= 75) probabilidadBase = 5.5;
           else if (data.age >= 60) probabilidadBase = 2.0;
           else if (data.age >= 45) probabilidadBase = 0.6;
           else if (data.age >= 30) probabilidadBase = 0.2;
 
-          // Multiplicadores acumulativos clínicos de riesgo relativo (RR)
           let rrIMC = 2.0;
           if (data.imc >= 40 || data.imc < 16) rrIMC = 3.5;
           else if (data.imc >= 35) rrIMC = 2.8;
@@ -105,10 +102,7 @@ export default function SimuladorSeguroPage() {
             else if (data.systolic_bp >= 130) rrPresion = 2.25;
           }
 
-          // Cálculo del riesgo absoluto proyectado a 1 año
           let probFinal = probabilidadBase * rrIMC * rrTabaco * rrPresion;
-
-          // Limitar la probabilidad a un rango lógico (máximo 85% automatizado para evitar overflows extraños)
           if (probFinal > 85) probFinal = 85;
           setProbabilidadMuerte(Math.round(probFinal * 100) / 100);
 
@@ -142,16 +136,15 @@ export default function SimuladorSeguroPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-12 space-y-4">
-        <div className="w-12 h-12 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 sm:p-12 space-y-4">
+        <div className="w-10 h-10 sm:w-12 h-12 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest text-center animate-pulse px-4">
           Evaluando historial de riesgo y comorbilidades...
         </p>
       </div>
     );
   }
 
-  // Configuración de estilos dinámicos del contenedor según el nivel de riesgo dictado por el algoritmo
   const esquemaDiseño = {
     normal: {
       borde: "from-indigo-500 via-purple-500 to-emerald-500",
@@ -183,25 +176,25 @@ export default function SimuladorSeguroPage() {
   }[nivelRiesgo];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased pt-8 sm:pt-12 px-4 sm:px-8 pb-20">
-      <div className="max-w-4xl w-full mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased pt-4 sm:pt-8 lg:pt-12 px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="max-w-4xl w-full mx-auto space-y-6 sm:space-y-8">
         {/* Cabecera */}
-        <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-lg">
-          <h1 className="text-3xl font-black text-white tracking-tight">
+        <div className="bg-slate-900 border border-slate-700 p-5 sm:p-8 rounded-2xl shadow-lg">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
             Pre-aprobación de Seguro de Vida
           </h1>
-          <p className="text-sm text-slate-400 mt-2 max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
             El motor actuarial de RobertCare audita pasivamente tus registros
             médicos para indexar primas en tiempo real basándose en perfiles
             epidemiológicos complejos.
           </p>
         </div>
 
-        {/* Dos columnas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Dos columnas (Estructura de diseño intacta) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
           {/* Columna Izquierda: Auditoría Clínica */}
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-md space-y-4">
-            <h2 className="font-bold text-xs text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-3">
+          <div className="bg-slate-900 border border-slate-700 p-5 sm:p-6 rounded-2xl shadow-md space-y-4">
+            <h2 className="font-bold text-[11px] sm:text-xs text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-3">
               Métricas Clínicas Utilizadas para el Análisis
             </h2>
             <p className="text-xs text-slate-400">
@@ -209,31 +202,36 @@ export default function SimuladorSeguroPage() {
               siniestralidad activa:
             </p>
 
+            {/* Grid Interno de Subtarjetas */}
             <div className="grid grid-cols-2 gap-3 text-xs pt-2">
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block">Edad de Riesgo:</span>
+                <span className="text-slate-500 block text-[11px] sm:text-xs">
+                  Edad de Riesgo:
+                </span>
                 <span
-                  className={`font-bold text-sm font-mono ${(paciente?.age ?? 0) >= 60 ? "text-rose-400" : "text-white"}`}
+                  className={`font-bold text-xs sm:text-sm font-mono ${(paciente?.age ?? 0) >= 60 ? "text-rose-400" : "text-white"}`}
                 >
                   {paciente?.age || 0} años
                 </span>
               </div>
 
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block">
+                <span className="text-slate-500 block text-[11px] sm:text-xs">
                   Índice de Masa Corporal:
                 </span>
                 <span
-                  className={`font-bold text-sm font-mono ${paciente && (paciente.imc >= 35 || paciente.imc < 16) ? "text-rose-400" : paciente && paciente.imc >= 25 ? "text-amber-400" : "text-emerald-400"}`}
+                  className={`font-bold text-xs sm:text-sm font-mono ${paciente && (paciente.imc >= 35 || paciente.imc < 16) ? "text-rose-400" : paciente && paciente.imc >= 25 ? "text-amber-400" : "text-emerald-400"}`}
                 >
                   {paciente?.imc ? `${paciente.imc.toFixed(1)} kg/m²` : "N/A"}
                 </span>
               </div>
 
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block">Consumo de Tabaco:</span>
+                <span className="text-slate-500 block text-[11px] sm:text-xs">
+                  Consumo de Tabaco:
+                </span>
                 <span
-                  className={`font-bold text-sm ${
+                  className={`font-bold text-xs sm:text-sm ${
                     paciente?.smoking_habits === "active" || paciente?.smoker
                       ? "text-rose-400"
                       : paciente?.smoking_habits === "occasional"
@@ -251,11 +249,11 @@ export default function SimuladorSeguroPage() {
               </div>
 
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block">
+                <span className="text-slate-500 block text-[11px] sm:text-xs">
                   Presión Arterial Máxima:
                 </span>
                 <span
-                  className={`font-bold text-sm font-mono ${paciente && (paciente.systolic_bp ?? 0) >= 145 ? "text-rose-400" : "text-white"}`}
+                  className={`font-bold text-xs sm:text-sm font-mono ${paciente && (paciente.systolic_bp ?? 0) >= 145 ? "text-rose-400" : "text-white"}`}
                 >
                   {paciente?.systolic_bp && paciente?.diastolic_bp
                     ? `${paciente.systolic_bp}/${paciente.diastolic_bp} mmHg`
@@ -266,7 +264,7 @@ export default function SimuladorSeguroPage() {
 
             {nivelRiesgo !== "normal" && (
               <div
-                className={`text-[11px] rounded-xl p-3 border leading-relaxed ${
+                className={`text-[11px] sm:text-xs rounded-xl p-3 border leading-relaxed ${
                   nivelRiesgo === "critico"
                     ? "bg-rose-950/30 text-rose-300 border-rose-900/50"
                     : "bg-amber-950/30 text-amber-300 border-amber-900/50"
@@ -281,12 +279,12 @@ export default function SimuladorSeguroPage() {
 
           {/* Columna Derecha: Recuadro con Mutación de Color Reactiva */}
           <div
-            className={`relative overflow-hidden rounded-2xl p-2px bg-linear-to-b ${esquemaDiseño.borde} shadow-2xl ${esquemaDiseño.sombra} transition-all duration-500`}
+            className={`relative overflow-hidden rounded-2xl p-[2px] bg-gradient-to-b ${esquemaDiseño.borde} shadow-2xl ${esquemaDiseño.sombra} transition-all duration-500`}
           >
-            <div className="bg-slate-900 rounded-[14px] p-6 h-full flex flex-col justify-between space-y-5">
+            <div className="bg-slate-900 rounded-[14px] p-5 sm:p-6 h-full flex flex-col justify-between space-y-5">
               <div className="text-center">
                 <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border ${esquemaDiseño.badgeClase}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black tracking-widest uppercase border ${esquemaDiseño.badgeClase}`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${esquemaDiseño.badgeDot}`}
@@ -295,13 +293,13 @@ export default function SimuladorSeguroPage() {
                 </span>
 
                 <div className="mt-5 mb-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                     Tu Prima Mensual Indexada
                   </span>
 
-                  {/* Despliegue masivo del precio alterado */}
+                  {/* Despliegue masivo del precio alterado con fuentes responsivas */}
                   <div
-                    className={`text-4xl sm:text-5xl font-black tracking-tight font-mono mt-1 ${
+                    className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-mono mt-1 ${
                       nivelRiesgo === "critico"
                         ? "text-rose-400"
                         : nivelRiesgo === "alto"
@@ -326,14 +324,14 @@ export default function SimuladorSeguroPage() {
                 </div>
               </div>
 
-              {/* NUEVO COMPONENTE: Indicador de Probabilidad de Muerte Exponencial */}
-              <div className="bg-slate-950/80 rounded-xl p-4 border border-slate-800 space-y-2.5">
-                <div className="flex justify-between items-center text-xs">
+              {/* Indicador de Probabilidad de Muerte */}
+              <div className="bg-slate-950/80 rounded-xl p-3 sm:p-4 border border-slate-800 space-y-2.5">
+                <div className="flex justify-between items-center text-[11px] sm:text-xs">
                   <span className="text-slate-400 font-medium">
                     Índice de Mortalidad Actuarial (Anualizado):
                   </span>
                   <span
-                    className={`font-mono font-black ${esquemaDiseño.textoColor} text-sm`}
+                    className={`font-mono font-black ${esquemaDiseño.textoColor} text-xs sm:text-sm`}
                   >
                     {probabilidadMuerte}%
                   </span>
@@ -345,18 +343,18 @@ export default function SimuladorSeguroPage() {
                     className={`h-full ${esquemaDiseño.progresoColor} transition-all duration-1000 ease-out`}
                     style={{
                       width: `${Math.min(probabilidadMuerte * 10, 100)}%`,
-                    }} // Escalado x10 para que sea perceptible visualmente incluso en rangos del 1% al 10%
+                    }}
                   />
                 </div>
 
-                <p className="text-[10px] text-slate-500 leading-tight">
+                <p className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">
                   Probabilidad estadística basada en tablas actuariales cruzadas
                   con tus biométricos actuales de RobertCare.
                 </p>
               </div>
 
               {/* Bloque Informativo según Severidad */}
-              <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 space-y-2 text-xs">
+              <div className="bg-slate-950/60 rounded-xl p-3 sm:p-4 border border-slate-800/80 space-y-2 text-xs">
                 {nivelRiesgo === "critico" ? (
                   <p className="text-rose-300 text-center leading-relaxed">
                     🚨 **Suscripción Restringida:** Debido a tus alarmantes
@@ -380,7 +378,7 @@ export default function SimuladorSeguroPage() {
                 )}
               </div>
 
-              <p className="text-[11px] text-slate-500 text-center leading-relaxed bg-slate-950/30 p-3 rounded-lg border border-slate-800/40">
+              <p className="text-[10px] sm:text-[11px] text-slate-500 text-center leading-relaxed bg-slate-950/30 p-2.5 sm:p-3 rounded-lg border border-slate-800/40">
                 *Cálculo pasivo generado de forma automatizada por la mesa de
                 riesgo RobertCare Seguros. Las alteraciones críticas en tus
                 consultas modifican este valor.
