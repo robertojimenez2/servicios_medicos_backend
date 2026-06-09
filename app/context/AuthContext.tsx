@@ -8,6 +8,7 @@ interface CustomUser {
   uid: string;
   email: string;
   name: string;
+  role: string;
 }
 
 interface AuthContextType {

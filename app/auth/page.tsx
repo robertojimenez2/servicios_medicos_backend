@@ -97,6 +97,7 @@ export default function AuthPage() {
             uid: data.uid || data.email,
             email: data.email,
             name: data.name,
+            role: data.role || "patient", // 🌟 CORREGIDO: Ahora el Layout sabrá que es un paciente
           });
         }
 
@@ -128,6 +129,7 @@ export default function AuthPage() {
         console.log("¡Logueado con éxito mediante FastAPI!", data);
 
         if (data.user) {
+          // Asegúrate de que `data.user` contenga la propiedad `role` desde FastAPI
           loginCentral(data.user);
         }
 
@@ -140,7 +142,6 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
       {/* NAVBAR */}

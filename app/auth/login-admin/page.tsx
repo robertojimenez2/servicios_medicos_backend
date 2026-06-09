@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 // 🎯 Importamos las herramientas nativas del cliente de Firebase
 import { auth } from "../../../firebase.config";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import Navv from "@/app/components/Navv";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -86,73 +87,76 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-slate-900 p-8 rounded-xl shadow-2xl border border-slate-800">
-        {/* Encabezado */}
-        <div className="text-center">
-          <span className="px-3 py-1 bg-red-500/10 text-red-400 text-xs font-semibold rounded-full uppercase tracking-wider">
-            Consola del Sistema (SDK)
-          </span>
-          <h2 className="mt-3 text-3xl font-extrabold text-white tracking-tight">
-            RobertCare <span className="text-red-500">Admin</span>
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Inicio de sesión directo mediante Firebase Client
-          </p>
+    <>
+      <Navv />{" "}
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-slate-900 p-8 rounded-xl shadow-2xl border border-slate-800">
+          {/* Encabezado */}
+          <div className="text-center">
+            <span className="px-3 py-1 bg-red-500/10 text-red-400 text-xs font-semibold rounded-full uppercase tracking-wider">
+              Consola del Sistema (SDK)
+            </span>
+            <h2 className="mt-3 text-3xl font-extrabold text-white tracking-tight">
+              RobertCare <span className="text-red-500">Admin</span>
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Inicio de sesión directo mediante Firebase Client
+            </p>
+          </div>
+
+          {/* Alerta de Error */}
+          {error && (
+            <div className="bg-red-950/40 border-l-4 border-red-500 p-4 rounded text-sm text-red-200">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Formulario */}
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                placeholder="admin@robertcare.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full mt-6 py-3 px-4 rounded-lg text-white font-medium shadow-md transition ${
+                loading
+                  ? "bg-red-900/50 cursor-not-allowed text-slate-400"
+                  : "bg-red-600 hover:bg-red-700 active:scale-[0.98]"
+              }`}
+            >
+              {loading ? "Autenticando en Firebase..." : "Entrar a la Consola"}
+            </button>
+          </form>
         </div>
-
-        {/* Alerta de Error */}
-        {error && (
-          <div className="bg-red-950/40 border-l-4 border-red-500 p-4 rounded text-sm text-red-200">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Formulario */}
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              Correo Electrónico
-            </label>
-            <input
-              type="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-              placeholder="admin@robertcare.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              name="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full mt-6 py-3 px-4 rounded-lg text-white font-medium shadow-md transition ${
-              loading
-                ? "bg-red-900/50 cursor-not-allowed text-slate-400"
-                : "bg-red-600 hover:bg-red-700 active:scale-[0.98]"
-            }`}
-          >
-            {loading ? "Autenticando en Firebase..." : "Entrar a la Consola"}
-          </button>
-        </form>
       </div>
-    </div>
+    </>
   );
 }

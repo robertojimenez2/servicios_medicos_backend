@@ -1,7 +1,11 @@
 from typing import Optional
-
-from fastapi import APIRouter, HTTPException, status, Query
+import io
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from . import schemas, services
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 router = APIRouter(prefix="/health", tags=["health_math"])
 
@@ -147,3 +151,78 @@ def list_pending_doctors(admin_uid: str = Query(...)):
     Mapeado para recibir admin_uid desde la URL (?admin_uid=...)
     """
     return services.get_pending_doctors(admin_uid)
+
+    doctor_uid: str = Field(..., description="UID único del médico en RobertCare")
+    patient_id: str = Field(..., description="Email o UID del paciente a enlazar")
+
+
+@router.post("/doctor/assign-patient", status_code=200)
+def api_assign_patient(payload: schemas.AssignPatientPayload):
+    """
+    Vincula un paciente al núcleo de un doctor específico utilizando 
+    el correo electrónico o el UID del paciente.
+    """
+    return services.assign_patient_to_doctor(
+        doctor_uid=payload.doctor_uid, 
+        patient_email_or_uid=payload.patient_id
+    )
+
+
+@router.get("/doctor/{doctor_uid}/my-patients", status_code=200)
+def api_get_my_patients(doctor_uid: str):
+    """
+    Recupera única y exclusivamente el listado de pacientes enlazados 
+    al núcleo de atención del médico consultante.
+    """
+    return services.get_doctor_patients(doctor_uid=doctor_uid)
+
+
+@router.get("/doctor/patient/{patient_uid}", response_model=schemas.UserRead)
+def get_patient_secure_profile(patient_uid: str, doctor_uid: str = Query(...)):
+    """
+    Endpoint de seguridad extrema: Permite a un doctor abrir el expediente completo 
+    de un paciente, SIEMPRE Y CUANDO pertenezca a su núcleo de asignados (?doctor_uid=...).
+    """
+    from .firebase_client import get_db
+    db = get_db()
+    
+    # 🛡️ Validación en la frontera NoSQL
+    link_ref = db.collection("users").document(doctor_uid).collection("assigned_patients").document(patient_uid).get()
+    
+    if not link_ref.exists:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Acceso Denegado: Este expediente clínico no pertenece a tu núcleo de pacientes autorizados."
+        )
+        
+    return services.get_user_by_uid(patient_uid)
+
+@router.post("/users", response_model=schemas.UserRead)
+def create_user_endpoint(user: schemas.UserCreate):
+    try:
+        # Llamamos directamente a la función de tu service pasándole los datos validados
+        user_data = services.create_user_endpoint(user)
+        return user_data
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al registrar el usuario en el sistema: {str(e)}"
+        )
+
+@router.get("/users/{uid}/expediente-pdf", status_code=status.HTTP_200_OK)
+def descargar_expediente_pdf_doctor(uid: str):
+    """
+    Endpoint para el médico. Compila y descarga en PDF 
+    el expediente clínico unificado desde Firestore.
+    """
+    try:
+        return services.generar_pdf_expediente_doctor(uid)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al generar el reporte clínico en PDF: {str(e)}"
+        )

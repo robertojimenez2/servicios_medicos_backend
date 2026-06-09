@@ -186,3 +186,20 @@ class HealthConditionScenarioRead(HealthConditionScenarioCreate):
     pass
 
 
+class AssignPatientPayload(BaseModel):
+    doctor_uid: str = Field(..., description="UID único del médico en RobertCare")
+    patient_id: str = Field(..., description="Email o UID del paciente a enlazar")
+
+class Medicamento(BaseModel):
+    nombre: str
+    dosis: str
+    frecuencia: str
+    duracion: str
+
+class RecetaCreate(BaseModel):
+    paciente_email: str
+    paciente_nombre: str
+    medico_nombre: str
+    cedula_profesional: str
+    diagnostico: str
+    medicamentos: List[Medicamento]

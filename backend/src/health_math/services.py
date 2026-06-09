@@ -1,7 +1,8 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from . import schemas
 from .firebase_client import get_db
 
@@ -111,7 +112,8 @@ def get_login(credentials: schemas.LoginRequest):
         "user": {
             "uid": user_data.get("uid"),
             "email": user_data.get("email"),
-            "name": user_data.get("name")
+            "name": user_data.get("name"),
+            "role": user_data.get("role")
         }
     }
 
@@ -694,3 +696,194 @@ def get_pending_doctors(admin_uid: str):
     except Exception as e:
         print(f"💥 Error crítico en Firestore: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error interno en Firestore: {str(e)}")
+    
+
+def assign_patient_to_doctor(doctor_uid: str, patient_email_or_uid: str):
+    """
+    Vincula un paciente al núcleo médico de un doctor específico.
+    Acepta el email o el UID del paciente para facilitar la búsqueda al doctor.
+    """
+    try:
+        db = _db()
+        
+        # 1. Validar que el emisor sea un doctor aprobado
+        doctor_ref = db.collection("users").document(doctor_uid).get()
+        if not doctor_ref.exists or doctor_ref.to_dict().get("role") != "doctor":
+            raise HTTPException(status_code=403, detail="El usuario no es un médico autorizado.")
+
+        # 2. Buscar al paciente (ya sea por su UID directo o por su Email/ID de documento)
+        target_id = patient_email_or_uid.strip().lower()
+        patient_ref = db.collection("users").document(target_id).get()
+        
+        if not patient_ref.exists:
+            # Búsqueda secundaria en caso de que pasen un UID que no coincida con el documento
+            query = db.collection("users").where("uid", "==", target_id).stream()
+            patient_doc = next(query, None)
+            if not patient_doc:
+                raise HTTPException(status_code=404, detail="Paciente no encontrado en el sistema RobertCare.")
+            patient_data = patient_doc.to_dict()
+            p_uid = patient_data.get("uid")
+        else:
+            patient_data = patient_ref.to_dict()
+            p_uid = patient_data.get("uid", target_id)
+
+        # Evitar que un doctor se agregue a sí mismo o agregue a otro doctor
+        if patient_data.get("role") == "doctor" or patient_data.get("role") == "admin":
+            raise HTTPException(status_code=400, detail="No puedes asociar un perfil administrativo o médico como tu paciente.")
+
+        # 3. Guardar el enlace en una subcolección dentro del doctor
+        # Usamos el ID del paciente como ID del documento para evitar duplicados
+        db.collection("users").document(doctor_uid).collection("assigned_patients").document(p_uid).set({
+            "uid": p_uid,
+            "name": patient_data.get("name", "Paciente"),
+            "email": patient_data.get("email", ""),
+            "imc": patient_data.get("imc", 0.0),
+            "linkedAt": datetime.now(timezone.utc).isoformat()
+        })
+
+        return {"status": "success", "message": f"El paciente {patient_data.get('name')} ha sido añadido a tu consulta."}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_doctor_patients(doctor_uid: str) -> List[Dict[str, Any]]:
+    """
+    Recupera única y exclusivamente los pacientes asignados al núcleo de este doctor.
+    """
+    db = _db()
+    patients_stream = db.collection("users").document(doctor_uid).collection("assigned_patients").stream()
+    
+    lista_pacientes = []
+    for doc in patients_stream:
+        data = doc.to_dict()
+        lista_pacientes.append({
+            "uid": data.get("uid"),
+            "name": data.get("name"),
+            "email": data.get("email"),
+            "imc": data.get("imc")
+        })
+    return lista_pacientes
+
+def generar_pdf_expediente_doctor(uid: str) -> StreamingResponse:
+    """
+    Recupera el expediente clínico unificado de un paciente desde Firestore
+    usando get_user_by_uid y compila un reporte en PDF estructurado para el doctor.
+    """
+    import io
+    from fastapi.responses import StreamingResponse
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+
+    # 1. Reutilizamos tu función exacta que ya extrae todo de Firestore de forma segura
+    paciente = get_user_by_uid(uid)
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    story = []
+    
+    # Paleta de Estilos RobertCare
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('HTitle', parent=styles['Heading1'], fontSize=22, textColor=colors.HexColor("#1e3a8a"), spaceAfter=4)
+    subtitle_style = ParagraphStyle('HSub', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#64748b"), spaceAfter=15)
+    section_title = ParagraphStyle('STitle', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor("#0f172a"), spaceBefore=14, spaceAfter=6)
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#334155"))
+    cell_bold = ParagraphStyle('CellB', parent=styles['Normal'], fontSize=9, fontName="Helvetica-Bold", textColor=colors.HexColor("#0f172a"))
+    comment_style = ParagraphStyle('Comm', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#1e293b"))
+
+    # Encabezado Principal
+    story.append(Paragraph("RobertCare - Historia Clínica Unificada", title_style))
+    story.append(Paragraph(f"Reporte Médico Oficial Emitido el {datetime.now(timezone.utc).strftime('%Y-%m-%d')}", subtitle_style))
+    story.append(Spacer(1, 8))
+    
+    # Sección I: Datos Demográficos
+    story.append(Paragraph("I. Datos de Identificación", section_title))
+    datos_personales = [
+        [Paragraph("Nombre Completo:", cell_bold), Paragraph(paciente["name"], cell_style),
+         Paragraph("ID / UID:", cell_bold), Paragraph(paciente["uid"], cell_style)],
+        [Paragraph("Correo Electrónico:", cell_bold), Paragraph(paciente["email"], cell_style),
+         Paragraph("Edad:", cell_bold), Paragraph(f"{paciente['age']} años", cell_style)],
+        [Paragraph("País de Origen:", cell_bold), Paragraph(paciente["countryCode"] or "MX", cell_style),
+         Paragraph("Tipo de Sangre:", cell_bold), Paragraph(paciente["blood_type"], cell_style)]
+    ]
+    t_personales = Table(datos_personales, colWidths=[110, 150, 110, 150])
+    t_personales.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_personales)
+    
+    # Sección II: Métricas Biométricas Actuales
+    story.append(Paragraph("II. Parámetros Fisiológicos y Biometría", section_title))
+    nivel_actividad_es = {"sedentary": "Sedentario", "light": "Ligero", "moderate": "Moderado", "active": "Intenso"}.get(paciente["activityLevel"], paciente["activityLevel"])
+    
+    datos_biometricos = [
+        [Paragraph("Estatura Actual:", cell_bold), Paragraph(f"{paciente['height']} cm", cell_style),
+         Paragraph("Peso Actual:", cell_bold), Paragraph(f"{paciente['weight']} kg", cell_style)],
+        [Paragraph("Índice Masa Corporal:", cell_bold), Paragraph(f"{paciente['imc']} (Calculado)", cell_style),
+         Paragraph("Género Biológico:", cell_bold), Paragraph("Masculino" if paciente["gender"] == "male" else "Femenino", cell_style)],
+        [Paragraph("TMB Sugerido:", cell_bold), Paragraph(f"{paciente['tmb_kcal']} kcal", cell_style),
+         Paragraph("Gasto Energético (GETD):", cell_bold), Paragraph(f"{paciente['getd_kcal']} kcal", cell_style)],
+        [Paragraph("Nivel de Actividad:", cell_bold), Paragraph(nivel_actividad_es, cell_style),
+         Paragraph("Consumo Agua Sugerido:", cell_bold), Paragraph(f"{paciente['water_recommendation']} ml/día", cell_style)]
+    ]
+    t_biometricos = Table(datos_biometricos, colWidths=[110, 150, 110, 150])
+    t_biometricos.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_biometricos)
+
+    # Sección III: Signos Vitales de Control
+    story.append(Paragraph("III. Último Registro de Signos Vitales", section_title))
+    datos_vitales = [
+        [Paragraph("Presión Sistólica:", cell_bold), Paragraph(f"{paciente['systolic_bp']} mmHg" if paciente['systolic_bp'] else "N/A", cell_style),
+         Paragraph("Presión Diastólica:", cell_bold), Paragraph(f"{paciente['diastolic_bp']} mmHg" if paciente['diastolic_bp'] else "N/A", cell_style)],
+        [Paragraph("Frecuencia Cardíaca:", cell_bold), Paragraph(f"{paciente['heart_rate']} lpm" if paciente['heart_rate'] else "N/A", cell_style),
+         Paragraph("Saturación de Oxígeno:", cell_bold), Paragraph(f"{paciente['oxygen_saturation']}%" if paciente['oxygen_saturation'] else "N/A", cell_style)],
+        [Paragraph("Temperatura Corporal:", cell_bold), Paragraph(f"{paciente['temperature']} °C" if paciente['temperature'] else "N/A", cell_style),
+         Paragraph("", cell_bold), Paragraph("", cell_style)]
+    ]
+    t_vitales = Table(datos_vitales, colWidths=[110, 150, 110, 150])
+    t_vitales.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_vitales)
+
+    # Sección IV: Comentarios de Diagnóstico Clínico
+    story.append(Paragraph("IV. Evolución y Notas Médicas Firmadas", section_title))
+    if not paciente["medical_comments"]:
+        story.append(Paragraph("No se registran observaciones médicas previas en el expediente.", cell_style))
+    else:
+        for c in paciente["medical_comments"]:
+            nota = f"<b>[{c['date']}] {c['doctor_name']}</b> (Categoría: {c['category']}):<br/>{c['comment']}"
+            story.append(Paragraph(nota, comment_style))
+            story.append(Spacer(1, 4))
+
+    # Construcción final del stream binario
+    doc.build(story)
+    buffer.seek(0)
+    
+    nombre_limpio = paciente["name"].replace(" ", "_")
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Expediente_{nombre_limpio}.pdf"}
+    )

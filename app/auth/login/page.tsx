@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { auth } from "../../../firebase.config";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Pointer } from "lucide-react";
+import Link from "next/link";
+import Navv from "@/app/components/Navv";
 
 export default function DoctorLoginPage() {
   const router = useRouter();
@@ -94,74 +96,90 @@ export default function DoctorLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-slate-100 antialiased">
-      <div className="max-w-md w-full space-y-8 bg-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-800">
-        {/* Encabezado */}
-        <div className="text-center">
-          <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-black rounded-md uppercase tracking-widest border border-indigo-500/20">
-            Acceso Médico
-          </span>
-          <h2 className="mt-4 text-3xl font-black text-white tracking-tight">
-            RobertCare <span className="text-indigo-400">Clinical</span>
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Ingresa a tu consola de expedientes médicos
+    <>
+      <Navv />
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-slate-100 antialiased">
+        <div className="max-w-md w-full space-y-8 bg-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-800">
+          {/* Encabezado */}
+          <div className="text-center">
+            <span className="px-3 py-1 bg-indigo-500/10 text-white text-xs font-black rounded-md uppercase tracking-widest border border-indigo-500/20">
+              Acceso Médico
+            </span>
+            <h2 className="mt-4 text-3xl font-black text-white tracking-tight">
+              RobertCare <span className="text-indigo-400">Clinical</span>
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Ingresa a tu consola de expedientes médicos
+            </p>
+          </div>
+
+          {/* Alerta de Error */}
+          {error && (
+            <div className="bg-red-950/50 border border-red-800 p-4 rounded-xl text-sm text-red-200 font-medium">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Formulario */}
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                Correo Institucional / Profesional
+              </label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
+                placeholder="dr.nombre@robertcare.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{}}
+              className={`w-full mt-6 py-3 px-4 rounded-xl text-white font-black text-sm shadow-lg transition-all ${
+                loading
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                  : "bg-indigo-400 hover:bg-indigo-300 active:scale-[0.98]"
+              }`}
+            >
+              {loading
+                ? "Verificando Credenciales..."
+                : "Iniciar Sesión Clínica"}
+            </button>
+          </form>
+        </div>
+        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-600">
+            ¿Quieres registrarte?{" "}
+            <Link
+              href="/auth/register-doctor/" // 👈 Cambia esto por la ruta real de tu login de pacientes
+              className="font-medium text-blue-600 hover:text-blue-500 hover:underline transition"
+            >
+              Da clic aqui
+            </Link>
           </p>
         </div>
-
-        {/* Alerta de Error */}
-        {error && (
-          <div className="bg-red-950/50 border border-red-800 p-4 rounded-xl text-sm text-red-200 font-medium">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Formulario */}
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
-              Correo Institucional / Profesional
-            </label>
-            <input
-              type="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
-              placeholder="dr.nombre@robertcare.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              name="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{}}
-            className={`w-full mt-6 py-3 px-4 rounded-xl text-white font-black text-sm shadow-lg transition-all ${
-              loading
-                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                : "bg-indigo-400 hover:bg-indigo-300 active:scale-[0.98]"
-            }`}
-          >
-            {loading ? "Verificando Credenciales..." : "Iniciar Sesión Clínica"}
-          </button>
-        </form>
       </div>
-    </div>
+    </>
   );
 }

@@ -79,9 +79,7 @@ export default function LandingPage() {
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
             }`}
           >
-            La primera plataforma de ingeniería de software médica orientada a
-            desmitificar tus pólizas de seguro. Simula riesgos, calcula
-            deducibles y toma el control.
+            Plataforma de centro médico y de seguros.
           </p>
         </div>
       </header>
