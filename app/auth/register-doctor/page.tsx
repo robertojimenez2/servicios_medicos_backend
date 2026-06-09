@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/firebase.config";
+import { auth } from "../../../firebase.config";
 
 export default function RegisterDoctorPage() {
   const router = useRouter();
