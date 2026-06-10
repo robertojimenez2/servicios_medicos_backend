@@ -12,7 +12,9 @@ origins = [
     "http://localhost:3000",
     "http://localhost:3000/",
     "https://servicios-medicos-frontend.onrender.com/",     
-    "https://servicios-medicos-frontend.onrender.com",    
+    "https://servicios-medicos-frontend.onrender.com",
+    "http://127.0.0.1:5500/",
+    "http://127.0.0.1:5500"    
 ]
 
 app.add_middleware(
