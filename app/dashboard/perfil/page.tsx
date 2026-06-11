@@ -310,7 +310,7 @@ export default function EditarPerfilPage() {
             className="text-xs font-bold text-slate-500 uppercase tracking-wider"
             htmlFor="gender"
           >
-            Género Asignado al Nacer
+            Sexo
           </label>
           <select
             id="gender"

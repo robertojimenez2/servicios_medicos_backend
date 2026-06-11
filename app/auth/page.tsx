@@ -21,7 +21,6 @@ export default function AuthPage() {
     edad: "",
     countryCode: "",
     confirmPassword: "",
-    // 🎯 NUEVAS VARIABLES MÉDICAS
     weight: "",
     height: "",
     gender: "male",

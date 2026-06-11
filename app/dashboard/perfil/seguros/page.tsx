@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 
 interface PatientData {
@@ -9,7 +10,7 @@ interface PatientData {
   age: number;
   imc: number;
   smoker: boolean;
-  smoking_habits?: "no_smoker" | "occasional" | "active";
+  smoking_habits?: "no_smoker" | "occasional" | "heavy";
   systolic_bp?: number;
   diastolic_bp?: number;
 }
@@ -20,13 +21,11 @@ export default function SimuladorSeguroPage() {
   const [paciente, setPaciente] = useState<PatientData | null>(null);
   const [primaMensual, setPrimaMensual] = useState<number>(0);
   const [probabilidadMuerte, setProbabilidadMuerte] = useState<number>(0);
-
-  // Niveles de riesgo para adaptar la interfaz de la cotización: 'normal' | 'alto' | 'critico'
   const [nivelRiesgo, setNivelRiesgo] = useState<"normal" | "alto" | "critico">(
     "normal",
   );
 
-  const COBERTURA_FIJA = 1000000; // $1,000,000 MXN / USD
+  const COBERTURA_FIJA = 1000000;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   useEffect(() => {
@@ -38,11 +37,7 @@ export default function SimuladorSeguroPage() {
           const data: PatientData = await res.json();
           setPaciente(data);
 
-          // ==========================================
-          // 1. MOTOR ACTUARIAL: CÁLCULO DE LA PRIMA
-          // ==========================================
           let factorBase = (COBERTURA_FIJA / 100000) * 15;
-
           let factorEdad = 1.0;
           if (data.age >= 75) factorEdad = 8.5;
           else if (data.age >= 60) factorEdad = 4.0;
@@ -58,11 +53,9 @@ export default function SimuladorSeguroPage() {
           let factorTabaco = 1.0;
           const esFumador =
             data.smoker ||
-            data.smoking_habits === "active" ||
+            data.smoking_habits === "heavy" ||
             data.smoking_habits === "occasional";
-          if (esFumador) {
-            factorTabaco = data.age > 50 ? 3.0 : 1.8;
-          }
+          if (esFumador) factorTabaco = data.age > 50 ? 3.0 : 1.8;
 
           let factorPresion = 1.0;
           if (data.systolic_bp) {
@@ -75,9 +68,6 @@ export default function SimuladorSeguroPage() {
             factorBase * factorEdad * factorIMC * factorTabaco * factorPresion;
           setPrimaMensual(Math.round(totalPrima * 100) / 100);
 
-          // ==========================================
-          // 2. MODELO DE RIESGO: PROBABILIDAD DE MUERTE (%)
-          // ==========================================
           let probabilidadBase = 0.1;
           if (data.age >= 75) probabilidadBase = 5.5;
           else if (data.age >= 60) probabilidadBase = 2.0;
@@ -93,8 +83,9 @@ export default function SimuladorSeguroPage() {
             ? data.smoking_habits === "occasional"
               ? 1.4
               : 4.1
-            : 1.0;
+            : 4.1;
 
+          console.log(rrTabaco);
           let rrPresion = 1.0;
           if (data.systolic_bp) {
             if (data.systolic_bp >= 180) rrPresion = 4.5;
@@ -103,12 +94,8 @@ export default function SimuladorSeguroPage() {
           }
 
           let probFinal = probabilidadBase * rrIMC * rrTabaco * rrPresion;
-          if (probFinal > 85) probFinal = 85;
           setProbabilidadMuerte(Math.round(probFinal * 100) / 100);
 
-          // ==========================================
-          // 3. DETERMINACIÓN DEL PERFIL DE RIESGO VISUAL
-          // ==========================================
           const multiplicadorTotal =
             factorEdad * factorIMC * factorTabaco * factorPresion;
           if (
@@ -130,262 +117,465 @@ export default function SimuladorSeguroPage() {
         setLoading(false);
       }
     }
-
     obtenerDatosYCalcular();
   }, [user, apiUrl]);
 
+  // ── Semáforos (mismo patrón que expediente) ──────────────────────────────
+  const badgeRiesgo = {
+    normal: {
+      label: "Perfil Preferencial",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      dot: "bg-emerald-500",
+    },
+    alto: {
+      label: "Riesgo Elevado",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+      dot: "bg-amber-500",
+    },
+    critico: {
+      label: "Riesgo Crítico",
+      color: "text-red-700 bg-red-50 border-red-200",
+      dot: "bg-red-500 animate-ping",
+    },
+  }[nivelRiesgo];
+
+  const badgeTabaco = () => {
+    if (!paciente)
+      return {
+        label: "Sin Registro",
+        color: "text-slate-400 bg-slate-50 border-slate-200",
+      };
+    const h = paciente.smoking_habits;
+    if (h === "heavy" || paciente.smoker)
+      return {
+        label: "Fumador Activo",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (h === "occasional")
+      return {
+        label: "Ocasional",
+        color: "text-amber-700 bg-amber-50 border-amber-200",
+      };
+    return {
+      label: "No Fumador",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  };
+
+  const badgePresion = () => {
+    const sys = paciente?.systolic_bp;
+    const dia = paciente?.diastolic_bp;
+    if (!sys || !dia)
+      return {
+        label: "Sin Registro",
+        color: "text-slate-400 bg-slate-50 border-slate-200",
+      };
+    if (sys >= 180)
+      return {
+        label: "Hipertensión E2",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (sys >= 145)
+      return {
+        label: "Hipertensión E2",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (sys >= 130)
+      return {
+        label: "Hipertensión E1",
+        color: "text-orange-700 bg-orange-50 border-orange-200",
+      };
+    if (sys >= 120)
+      return {
+        label: "Elevada",
+        color: "text-amber-700 bg-amber-50 border-amber-200",
+      };
+    return {
+      label: "Óptima",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  };
+
+  const badgeEdad = () => {
+    const age = paciente?.age ?? 0;
+    if (age >= 75)
+      return {
+        label: "Riesgo Muy Alto",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (age >= 60)
+      return {
+        label: "Riesgo Alto",
+        color: "text-orange-700 bg-orange-50 border-orange-200",
+      };
+    if (age >= 45)
+      return {
+        label: "Riesgo Moderado",
+        color: "text-amber-700 bg-amber-50 border-amber-200",
+      };
+    return {
+      label: "Riesgo Bajo",
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  };
+
+  const badgeIMC = () => {
+    const imc = paciente?.imc ?? 0;
+    if (imc >= 40 || imc < 16)
+      return {
+        label: "Obesidad Mórbida",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (imc >= 35)
+      return {
+        label: "Obesidad E2",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (imc >= 30)
+      return {
+        label: "Obesidad E1",
+        color: "text-orange-700 bg-orange-50 border-orange-200",
+      };
+    if (imc >= 25)
+      return {
+        label: "Sobrepeso",
+        color: "text-amber-700 bg-amber-50 border-amber-200",
+      };
+    if (imc >= 18.5)
+      return {
+        label: "Normal",
+        color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      };
+    return {
+      label: "Bajo Peso",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    };
+  };
+
+  const barColor = {
+    normal: "bg-emerald-500",
+    alto: "bg-amber-500",
+    critico: "bg-red-500",
+  }[nivelRiesgo];
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 sm:p-12 space-y-4">
-        <div className="w-10 h-10 sm:w-12 h-12 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest text-center animate-pulse px-4">
-          Evaluando historial de riesgo y comorbilidades...
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-2">
+        <div className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">
+          Evaluando historial de riesgo...
         </p>
       </div>
     );
   }
 
-  const esquemaDiseño = {
-    normal: {
-      borde: "from-indigo-500 via-purple-500 to-emerald-500",
-      sombra: "shadow-indigo-950/50",
-      badgeText: "Póliza Calculada al Instante",
-      badgeClase: "text-emerald-400 bg-emerald-950/60 border-emerald-800/60",
-      badgeDot: "bg-emerald-400",
-      progresoColor: "bg-emerald-500",
-      textoColor: "text-emerald-400",
-    },
-    alto: {
-      borde: "from-amber-600 via-orange-500 to-amber-700",
-      sombra: "shadow-orange-950/40",
-      badgeText: "Tarifa Ajustada por Riesgo Elevado",
-      badgeClase: "text-amber-400 bg-amber-950/60 border-amber-800/60",
-      badgeDot: "bg-amber-500",
-      progresoColor: "bg-amber-500",
-      textoColor: "text-amber-400",
-    },
-    critico: {
-      borde: "from-rose-700 via-red-600 to-rose-900",
-      sombra: "shadow-red-950/60",
-      badgeText: "Riesgo Clínico Extremo / Tarifa Especial",
-      badgeClase: "text-rose-400 bg-rose-950/70 border-rose-800/60",
-      badgeDot: "bg-rose-500 animate-ping",
-      progresoColor: "bg-rose-600",
-      textoColor: "text-rose-400",
-    },
-  }[nivelRiesgo];
+  const tabaco = badgeTabaco();
+  const presion = badgePresion();
+  const edad = badgeEdad();
+  const imc = badgeIMC();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased pt-4 sm:pt-8 lg:pt-12 px-4 sm:px-6 lg:px-8 pb-16">
-      <div className="max-w-4xl w-full mx-auto space-y-6 sm:space-y-8">
-        {/* Cabecera */}
-        <div className="bg-slate-900 border border-slate-700 p-5 sm:p-8 rounded-2xl shadow-lg">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
-            Pre-aprobación de Seguro de Vida
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 text-slate-800">
+      {/* Encabezado — idéntico al expediente */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+            ID Paciente: {user?.uid}
+          </span>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight mt-1.5">
+            Simulador de Seguro de Vida
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
-            El motor actuarial de RobertCare audita pasivamente tus registros
-            médicos para indexar primas en tiempo real basándose en perfiles
-            epidemiológicos complejos.
+          <p className="text-sm text-slate-500">
+            Prima indexada en tiempo real con base en tus biométricos de
+            RobertCare.
           </p>
         </div>
+        <Link
+          href="/dashboard"
+          className="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all self-start sm:self-auto"
+        >
+          ← Volver al Dashboard
+        </Link>
+      </div>
 
-        {/* Dos columnas (Estructura de diseño intacta) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
-          {/* Columna Izquierda: Auditoría Clínica */}
-          <div className="bg-slate-900 border border-slate-700 p-5 sm:p-6 rounded-2xl shadow-md space-y-4">
-            <h2 className="font-bold text-[11px] sm:text-xs text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-3">
-              Métricas Clínicas Utilizadas para el Análisis
-            </h2>
-            <p className="text-xs text-slate-400">
-              Datos extraídos de tu expediente y cruzados con las tablas de
-              siniestralidad activa:
-            </p>
-
-            {/* Grid Interno de Subtarjetas */}
-            <div className="grid grid-cols-2 gap-3 text-xs pt-2">
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block text-[11px] sm:text-xs">
-                  Edad de Riesgo:
-                </span>
-                <span
-                  className={`font-bold text-xs sm:text-sm font-mono ${(paciente?.age ?? 0) >= 60 ? "text-rose-400" : "text-white"}`}
-                >
-                  {paciente?.age || 0} años
-                </span>
+      {/* Grid Principal */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Columna izquierda: Auditoría Clínica */}
+        <div className="md:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+            Métricas de Riesgo
+          </h3>
+          <div className="space-y-3 text-sm">
+            {/* Edad */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-slate-400 font-medium">Edad</p>
+                <p className="font-semibold text-slate-700">
+                  {paciente?.age ?? "—"} años
+                </p>
               </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block text-[11px] sm:text-xs">
-                  Índice de Masa Corporal:
-                </span>
-                <span
-                  className={`font-bold text-xs sm:text-sm font-mono ${paciente && (paciente.imc >= 35 || paciente.imc < 16) ? "text-rose-400" : paciente && paciente.imc >= 25 ? "text-amber-400" : "text-emerald-400"}`}
-                >
-                  {paciente?.imc ? `${paciente.imc.toFixed(1)} kg/m²` : "N/A"}
-                </span>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block text-[11px] sm:text-xs">
-                  Consumo de Tabaco:
-                </span>
-                <span
-                  className={`font-bold text-xs sm:text-sm ${
-                    paciente?.smoking_habits === "active" || paciente?.smoker
-                      ? "text-rose-400"
-                      : paciente?.smoking_habits === "occasional"
-                        ? "text-amber-400"
-                        : "text-emerald-400"
-                  }`}
-                >
-                  {paciente?.smoking_habits === "no_smoker" ||
-                  (!paciente?.smoker && !paciente?.smoking_habits)
-                    ? "No Fumador"
-                    : paciente?.smoking_habits === "occasional"
-                      ? "Ocasional"
-                      : "Activo"}
-                </span>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-slate-500 block text-[11px] sm:text-xs">
-                  Presión Arterial Máxima:
-                </span>
-                <span
-                  className={`font-bold text-xs sm:text-sm font-mono ${paciente && (paciente.systolic_bp ?? 0) >= 145 ? "text-rose-400" : "text-white"}`}
-                >
-                  {paciente?.systolic_bp && paciente?.diastolic_bp
-                    ? `${paciente.systolic_bp}/${paciente.diastolic_bp} mmHg`
-                    : "Estable"}
-                </span>
-              </div>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${edad.color}`}
+              >
+                {edad.label}
+              </span>
             </div>
 
-            {nivelRiesgo !== "normal" && (
-              <div
-                className={`text-[11px] sm:text-xs rounded-xl p-3 border leading-relaxed ${
-                  nivelRiesgo === "critico"
-                    ? "bg-rose-950/30 text-rose-300 border-rose-900/50"
-                    : "bg-amber-950/30 text-amber-300 border-amber-900/50"
-                }`}
-              >
-                ⚠️ **Aviso de recargo:** Tu tarifa mensual se ha incrementado
-                significativamente debido a que detectamos factores críticos que
-                elevan exponencialmente el riesgo biológico.
+            {/* IMC */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-slate-400 font-medium">
+                  Índice de Masa Corporal
+                </p>
+                <p className="font-semibold text-slate-700 font-mono">
+                  {paciente?.imc ? `${paciente.imc.toFixed(1)} kg/m²` : "—"}
+                </p>
               </div>
-            )}
+              <span
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${imc.color}`}
+              >
+                {imc.label}
+              </span>
+            </div>
+
+            {/* Tabaco */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-slate-400 font-medium">Tabaquismo</p>
+                <p className="font-semibold text-slate-700">{tabaco.label}</p>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${tabaco.color}`}
+              >
+                {tabaco.label}
+              </span>
+            </div>
+
+            {/* Presión */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-slate-400 font-medium">
+                  Presión Arterial
+                </p>
+                <p className="font-semibold text-slate-700 font-mono">
+                  {paciente?.systolic_bp && paciente?.diastolic_bp
+                    ? `${paciente.systolic_bp}/${paciente.diastolic_bp} mmHg`
+                    : "Sin registro"}
+                </p>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${presion.color}`}
+              >
+                {presion.label}
+              </span>
+            </div>
           </div>
 
-          {/* Columna Derecha: Recuadro con Mutación de Color Reactiva */}
-          <div
-            className={`relative overflow-hidden rounded-2xl p-[2px] bg-gradient-to-b ${esquemaDiseño.borde} shadow-2xl ${esquemaDiseño.sombra} transition-all duration-500`}
-          >
-            <div className="bg-slate-900 rounded-[14px] p-5 sm:p-6 h-full flex flex-col justify-between space-y-5">
-              <div className="text-center">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black tracking-widest uppercase border ${esquemaDiseño.badgeClase}`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${esquemaDiseño.badgeDot}`}
-                  ></span>
-                  {esquemaDiseño.badgeText}
-                </span>
+          {/* Aviso si hay riesgo */}
+          {nivelRiesgo !== "normal" && (
+            <div
+              className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                nivelRiesgo === "critico"
+                  ? "bg-red-50 text-red-700 border-red-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}
+            >
+              ⚠️ Tu tarifa incluye un recargo por factores clínicos fuera del
+              umbral saludable.
+            </div>
+          )}
+        </div>
 
-                <div className="mt-5 mb-2">
-                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Tu Prima Mensual Indexada
-                  </span>
+        {/* Columna derecha: Prima + Riesgo */}
+        <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+            Cotización Actuarial
+          </h3>
 
-                  {/* Despliegue masivo del precio alterado con fuentes responsivas */}
-                  <div
-                    className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-mono mt-1 ${
+          {/* Bloque Prima */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div>
+              <p className="text-xs text-slate-400 font-bold uppercase">
+                Prima Mensual Indexada
+              </p>
+              <p className="text-3xl font-black text-slate-800 mt-0.5 font-mono">
+                {primaMensual.toLocaleString("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                })}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Suma asegurada:{" "}
+                {COBERTURA_FIJA.toLocaleString("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                  maximumFractionDigits: 0,
+                })}
+              </p>
+            </div>
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${badgeRiesgo.color}`}
+            >
+              <span className={`w-2 h-2 rounded-full ${badgeRiesgo.dot}`} />
+              {badgeRiesgo.label}
+            </div>
+          </div>
+
+          {/* Grid de factores multiplicadores */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div className="p-3 bg-slate-50/50 rounded-xl">
+              <p className="text-[10px] text-slate-400 font-bold uppercase">
+                Factor Edad
+              </p>
+              <p className="text-lg font-bold text-slate-700">
+                {(paciente?.age ?? 0 >= 75)
+                  ? "×8.5"
+                  : (paciente?.age ?? 0 >= 60)
+                    ? "×4.0"
+                    : (paciente?.age ?? 0 >= 45)
+                      ? "×1.8"
+                      : (paciente?.age ?? 0 >= 30)
+                        ? "×1.2"
+                        : "×1.0"}
+              </p>
+            </div>
+            <div className="p-3 bg-slate-50/50 rounded-xl">
+              <p className="text-[10px] text-slate-400 font-bold uppercase">
+                Factor IMC
+              </p>
+              <p className="text-lg font-bold text-slate-700">
+                {paciente?.imc && (paciente.imc >= 40 || paciente.imc < 16)
+                  ? "×3.5"
+                  : paciente?.imc && paciente.imc >= 35
+                    ? "×2.2"
+                    : paciente?.imc && paciente.imc >= 30
+                      ? "×1.5"
+                      : paciente?.imc && paciente.imc >= 25
+                        ? "×1.15"
+                        : "×1.0"}
+              </p>
+            </div>
+            <div className="p-3 bg-slate-50/50 rounded-xl">
+              <p className="text-[10px] text-slate-400 font-bold uppercase">
+                Factor Tabaco
+              </p>
+              <p className="text-lg font-bold text-slate-700">
+                {paciente?.smoking_habits === "heavy" || paciente?.smoker
+                  ? paciente.age > 50
+                    ? "×3.0"
+                    : "×1.8"
+                  : paciente?.smoking_habits === "occasional"
+                    ? "×1.8"
+                    : "×1.0"}
+              </p>
+            </div>
+            <div className="p-3 bg-slate-50/50 rounded-xl">
+              <p className="text-[10px] text-slate-400 font-bold uppercase">
+                Factor Presión
+              </p>
+              <p className="text-lg font-bold text-slate-700">
+                {paciente?.systolic_bp && paciente.systolic_bp >= 180
+                  ? "×5.0"
+                  : paciente?.systolic_bp && paciente.systolic_bp >= 145
+                    ? "×2.5"
+                    : paciente?.systolic_bp && paciente.systolic_bp >= 130
+                      ? "×1.4"
+                      : "×1.0"}
+              </p>
+            </div>
+          </div>
+
+          {/* Índice de Mortalidad */}
+          <div className="space-y-2 pt-2">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+              Índice de Mortalidad Actuarial (Anualizado)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+              <div className="p-4 border border-slate-100 bg-slate-50/50 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-slate-400 font-medium">
+                    Probabilidad estimada de siniestro
+                  </p>
+                  <p
+                    className={`text-xl font-black font-mono ${
                       nivelRiesgo === "critico"
-                        ? "text-rose-400"
+                        ? "text-red-600"
                         : nivelRiesgo === "alto"
-                          ? "text-amber-400"
-                          : "text-white"
+                          ? "text-amber-600"
+                          : "text-emerald-600"
                     }`}
                   >
-                    {primaMensual.toLocaleString("es-MX", {
-                      style: "currency",
-                      currency: "MXN",
-                    })}
-                  </div>
-
-                  <span className="text-[10px] text-slate-400 block mt-1 font-mono">
-                    Suma Asegurada:{" "}
-                    {COBERTURA_FIJA.toLocaleString("es-MX", {
-                      style: "currency",
-                      currency: "MXN",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Indicador de Probabilidad de Muerte */}
-              <div className="bg-slate-950/80 rounded-xl p-3 sm:p-4 border border-slate-800 space-y-2.5">
-                <div className="flex justify-between items-center text-[11px] sm:text-xs">
-                  <span className="text-slate-400 font-medium">
-                    Índice de Mortalidad Actuarial (Anualizado):
-                  </span>
-                  <span
-                    className={`font-mono font-black ${esquemaDiseño.textoColor} text-xs sm:text-sm`}
-                  >
                     {probabilidadMuerte}%
-                  </span>
+                  </p>
                 </div>
-
-                {/* Barra de Progreso Visual */}
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${esquemaDiseño.progresoColor} transition-all duration-1000 ease-out`}
+                    className={`h-full ${barColor} transition-all duration-1000 ease-out rounded-full`}
                     style={{
                       width: `${Math.min(probabilidadMuerte * 10, 100)}%`,
                     }}
                   />
                 </div>
-
-                <p className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">
-                  Probabilidad estadística basada en tablas actuariales cruzadas
-                  con tus biométricos actuales de RobertCare.
+                <p className="text-[10px] text-slate-400">
+                  Calculado con tablas actuariales cruzadas con tus biométricos
+                  registrados en RobertCare.
                 </p>
               </div>
+            </div>
+          </div>
 
-              {/* Bloque Informativo según Severidad */}
-              <div className="bg-slate-950/60 rounded-xl p-3 sm:p-4 border border-slate-800/80 space-y-2 text-xs">
-                {nivelRiesgo === "critico" ? (
-                  <p className="text-rose-300 text-center leading-relaxed">
-                    🚨 **Suscripción Restringida:** Debido a tus alarmantes
-                    indicadores biométricos actuales, esta tarifa incluye un
-                    recargo de siniestralidad forzoso. La póliza requerirá
-                    ratificación manual antes de emitirse.
-                  </p>
-                ) : nivelRiesgo === "alto" ? (
-                  <p className="text-amber-300 text-center leading-relaxed">
-                    ⚠️ **Tarifa Agravada:** Ciertos indicadores clínicos se
-                    encuentran fuera de los rangos óptimos de salud pública, lo
-                    que impacta de manera directa en el costo mensual de
-                    protección.
-                  </p>
-                ) : (
-                  <p className="text-emerald-300 text-center leading-relaxed">
-                    ✅ **Estatus Preferencial:** Tu perfil biológico se mantiene
-                    dentro del umbral saludable estándar de la plataforma
-                    RobertCare.
-                  </p>
-                )}
-              </div>
-
-              <p className="text-[10px] sm:text-[11px] text-slate-500 text-center leading-relaxed bg-slate-950/30 p-2.5 sm:p-3 rounded-lg border border-slate-800/40">
-                *Cálculo pasivo generado de forma automatizada por la mesa de
-                riesgo RobertCare Seguros. Las alteraciones críticas en tus
-                consultas modifican este valor.
+          {/* Bloque informativo final */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+              <p className="text-xs font-bold text-slate-400 uppercase">
+                Cobertura Total
+              </p>
+              <p className="text-xl font-black text-blue-600 mt-0.5">
+                {COBERTURA_FIJA.toLocaleString("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                  maximumFractionDigits: 0,
+                })}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Suma asegurada fija por póliza estándar RobertCare.
+              </p>
+            </div>
+            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+              <p className="text-xs font-bold text-slate-400 uppercase">
+                Costo Anual Estimado
+              </p>
+              <p
+                className={`text-xl font-black mt-0.5 ${
+                  nivelRiesgo === "critico"
+                    ? "text-red-600"
+                    : nivelRiesgo === "alto"
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                }`}
+              >
+                {(primaMensual * 12).toLocaleString("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                })}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Proyección anual sin ajuste por variaciones clínicas.
               </p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Nota legal */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+          * Cálculo generado de forma automatizada por la mesa de riesgo
+          RobertCare Seguros. Las alteraciones en tus consultas clínicas
+          modifican este valor en tiempo real. Este simulador no constituye una
+          oferta formal de seguro.
+        </p>
       </div>
     </div>
   );
