@@ -97,7 +97,7 @@ export default function AuthPage() {
             uid: data.uid || data.email,
             email: data.email,
             name: data.name,
-            role: data.role || "patient", // 🌟 CORREGIDO: Ahora el Layout sabrá que es un paciente
+            role: data.role || "patient",
           });
         }
 
@@ -158,8 +158,8 @@ export default function AuthPage() {
       </nav>
 
       {/* CONTENEDOR */}
-      <main className="flex-grow flex items-center justify-center px-4 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-60 pointer-events-none"></div>
+      <main className="grow flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] background-size:16px_16px opacity-60 pointer-events-none"></div>
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-xl p-8 relative z-10">
           <div className="text-center space-y-2 mb-8">

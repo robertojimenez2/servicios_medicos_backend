@@ -1,7 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import ThemeToggle from "./components/ThemeToggle";
 import Navbar from "./components/Navbar";
 
 export default function LandingPage() {

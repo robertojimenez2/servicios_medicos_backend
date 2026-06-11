@@ -109,7 +109,6 @@ class UserRead(BaseModel):
     medical_comments: Optional[List[MedicalCommentRead]] = None
     specialty: Optional[str] = None
     
-    # 🎯 CORREGIDO: Esto garantiza que FastAPI obligue a empaquetar 'date' e 'indice' hacia Next.js
     history: Optional[List[WeightHistoryItem]] = None 
     
     medical_history: Optional[str] = None

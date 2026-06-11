@@ -69,7 +69,7 @@ def create_user_endpoint(credentials):
             "age": edad,
             "countryCode": credentials.countryCode,
             "hashedPassword": credentials.hashedPassword,
-            
+            "role": "patient",
             # Datos crudos ingresados
             "weight": peso,
             "height": altura,

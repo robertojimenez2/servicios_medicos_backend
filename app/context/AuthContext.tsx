@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Definimos la interfaz basada en lo que responde tu FastAPI
 interface CustomUser {
   uid: string;
   email: string;
@@ -12,10 +11,10 @@ interface CustomUser {
 }
 
 interface AuthContextType {
-  user: CustomUser | null; // El objeto de usuario proveniente de tu FastAPI/Firestore
-  loading: boolean; // True mientras lee el localStorage al arrancar
-  loginCentral: (userData: CustomUser) => void; // Función para iniciar sesión globalmente
-  logout: () => void; // Función centralizada para borrar la sesión
+  user: CustomUser | null;
+  loading: boolean;
+  loginCentral: (userData: CustomUser) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,7 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // 🔑 EL NUEVO OBSERVADOR: Al cargar la app, busca si hay sesión en la máquina local
     const savedSession = localStorage.getItem("userSession");
     if (savedSession) {
       try {
