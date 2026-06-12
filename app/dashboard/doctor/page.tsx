@@ -147,201 +147,270 @@ export default function DoctorDashboard() {
     }
   };
 
+  // Badge IMC — mismo sistema de semáforo del expediente
+  const badgeIMC = (imc?: number) => {
+    if (!imc)
+      return {
+        label: "Sin Registro",
+        color: "text-slate-400 bg-slate-50 border-slate-200",
+      };
+    if (imc >= 40 || imc < 16)
+      return {
+        label: "Obesidad Mórbida",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (imc >= 35)
+      return {
+        label: "Obesidad E2",
+        color: "text-red-700 bg-red-50 border-red-200",
+      };
+    if (imc >= 30)
+      return {
+        label: "Obesidad E1",
+        color: "text-orange-700 bg-orange-50 border-orange-200",
+      };
+    if (imc >= 25)
+      return {
+        label: "Sobrepeso",
+        color: "text-amber-700 bg-amber-50 border-amber-200",
+      };
+    if (imc >= 18.5)
+      return {
+        label: "Normal",
+        color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      };
+    return {
+      label: "Bajo Peso",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    };
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-2">
+        <div className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">
+          Cargando base de datos clínica...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased font-sans flex flex-col items-center pt-8 sm:pt-16 px-4 sm:px-8 pb-20">
-      {/* Toast Notification de alto contraste */}
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 text-slate-800">
+      {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-emerald-950 border border-emerald-500 text-emerald-100 px-6 py-4 rounded-xl shadow-2xl transition-all">
-          <span className="text-emerald-400 text-xl">✅</span>
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-white border border-emerald-200 text-emerald-700 px-5 py-3.5 rounded-xl shadow-lg transition-all">
+          <span className="text-emerald-500">✅</span>
           <p className="text-sm font-bold">{toastMessage}</p>
         </div>
       )}
 
-      <div className="w-full max-w-6xl flex flex-col gap-8">
-        {/* Header Sólido y Nítido */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-lg">
-          <div>
-            <div className="inline-block px-3 py-1 bg-indigo-950 border border-indigo-700 text-indigo-300 text-xs font-bold uppercase tracking-wider rounded-md mb-3">
-              Terminal Médica
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-              {doctorData ? `Dr. ${doctorData.name}` : "Portal Clínico"}
-            </h1>
-            <p className="text-sm text-slate-300 font-medium mt-2">
-              Especialidad:{" "}
-              <span className="text-indigo-400 font-bold">
-                {doctorData?.specialty}
-              </span>
-            </p>
-          </div>
+      {/* Encabezado — mismo patrón que expediente */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+            Terminal Médica · {doctorData?.specialty ?? "Cargando..."}
+          </span>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight mt-1.5">
+            {doctorData ? `Dr. ${doctorData.name}` : "Portal Clínico"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            Gestión de expedientes y notas clínicas de tu núcleo de pacientes.
+          </p>
+        </div>
+        <button
+          onClick={() => doctorUid && fetchPatients(doctorUid)}
+          className="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all self-start sm:self-auto"
+        >
+          🔄 Sincronizar
+        </button>
+      </div>
 
-          <button
-            onClick={() => doctorUid && fetchPatients(doctorUid)}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-xl transition-colors shadow-md active:scale-95 cursor-pointer"
-          >
-            🔄 Sincronizar
-          </button>
-        </header>
+      {/* Error */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-semibold flex items-center gap-2">
+          ⚠️ {error}
+        </div>
+      )}
 
-        {/* Módulo de Vinculación con inputs legibles */}
-        {doctorUid && (
-          <section className="bg-slate-900 border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-lg flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="text-center lg:text-left">
-              <h3 className="text-lg font-bold text-white">
-                Incorporar Paciente al Núcleo
-              </h3>
-              <p className="text-sm text-slate-400 mt-1">
-                Digita el ID o correo del paciente para importarlo.
-              </p>
-            </div>
-            <form
-              onSubmit={handleVincularPaciente}
-              className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-3"
-            >
+      {/* Grid Principal */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Columna izquierda: Vincular paciente */}
+        <div className="md:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+            Incorporar Paciente
+          </h3>
+          <p className="text-xs text-slate-500">
+            Ingresa el ID o correo del paciente para vincularlo a tu consulta.
+          </p>
+
+          <form onSubmit={handleVincularPaciente} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                ID o Correo del Paciente
+              </label>
               <input
                 type="text"
-                placeholder="ID del paciente o correo..."
+                placeholder="usuario@correo.com"
                 value={busquedaUid}
                 onChange={(e) => setBusquedaUid(e.target.value)}
-                className="w-full sm:w-80 bg-slate-950 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 transition-all"
                 required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
               />
-              <button
-                type="submit"
-                disabled={vincularLoading}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-6 py-3 rounded-xl transition-colors shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                {vincularLoading ? "Procesando..." : "Vincular Paciente"}
-              </button>
-            </form>
-          </section>
-        )}
+            </div>
+            <button
+              type="submit"
+              disabled={vincularLoading}
+              className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-800/60 text-white text-sm font-bold rounded-xl shadow-sm transition-all"
+            >
+              {vincularLoading ? "Procesando..." : "Vincular Paciente"}
+            </button>
+          </form>
 
-        {/* Errores */}
-        {error && (
-          <div className="p-5 bg-rose-950 border border-rose-700 text-rose-200 rounded-xl text-sm font-bold flex items-center gap-3 shadow-md">
-            <span className="text-xl">⚠️</span> {error}
+          {/* Resumen rápido */}
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-slate-400 font-medium">
+                Total de pacientes
+              </p>
+              <p className="text-sm font-black text-slate-700">
+                {patients.length}
+              </p>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-slate-400 font-medium">Especialidad</p>
+              <p className="text-xs font-bold text-blue-600">
+                {doctorData?.specialty ?? "—"}
+              </p>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Tabla de Datos de Alto Contraste */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <div className="w-12 h-12 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              Cargando base de datos
-            </p>
-          </div>
-        ) : (
-          <main className="bg-slate-900 border border-slate-700 rounded-2xl shadow-lg overflow-hidden">
-            {patients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-20 text-center">
-                <span className="text-5xl mb-4">📁</span>
-                <h3 className="text-xl font-bold text-white">
-                  Directorio vacío
-                </h3>
-                <p className="text-sm text-slate-400 max-w-sm mt-2">
-                  No tienes pacientes enlazados. Usa la barra superior para
-                  buscarlos e integrarlos a tu consulta.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950 border-b border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-300">
-                      <th className="p-5 pl-8">Paciente</th>
-                      <th className="p-5">Contacto</th>
-                      <th className="p-5 pr-8 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700 text-sm">
-                    {patients.map((patient) => (
+        {/* Columna derecha: Tabla de pacientes */}
+        <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+            Directorio de Pacientes
+          </h3>
+
+          {patients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
+              <span className="text-4xl mb-3">📁</span>
+              <p className="text-sm font-semibold text-slate-500">
+                Directorio vacío
+              </p>
+              <p className="text-xs mt-1 text-slate-400 max-w-xs">
+                Usa el panel izquierdo para incorporar pacientes a tu consulta.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-400 font-bold text-xs uppercase bg-slate-50/50">
+                    <th className="py-2.5 px-4">Paciente</th>
+                    <th className="py-2.5 px-4">IMC</th>
+                    <th className="py-2.5 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {patients.map((patient) => {
+                    const imcBadge = badgeIMC(patient.imc);
+                    return (
                       <tr
                         key={patient.uid}
-                        className="hover:bg-slate-800 transition-colors"
+                        className="hover:bg-slate-50/50 transition-colors"
                       >
-                        <td className="p-5 pl-8">
-                          <div className="font-bold text-white text-base">
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-slate-700">
                             {patient.name}
-                          </div>
-                          <div className="text-xs text-slate-400 font-mono mt-1">
+                          </p>
+                          <p className="text-xs text-slate-400 font-mono mt-0.5">
+                            {patient.email}
+                          </p>
+                          <p className="text-[10px] text-slate-300 font-mono mt-0.5">
                             ID: {patient.uid}
-                          </div>
+                          </p>
                         </td>
-
-                        <td className="p-5 text-slate-300 font-medium">
-                          {patient.email}
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 text-[11px] font-bold rounded-full border ${imcBadge.color}`}
+                          >
+                            {patient.imc ? `${patient.imc.toFixed(1)} · ` : ""}
+                            {imcBadge.label}
+                          </span>
                         </td>
-
-                        <td className="p-5 pr-8 text-right space-x-3">
+                        <td className="py-3 px-4 text-right">
                           <Link
                             href={`/dashboard/doctor/paciente/${patient.uid}`}
-                            className="inline-block px-4 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                            className="inline-block px-3 py-1.5 mb-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors"
                           >
                             Ver Ficha
                           </Link>
-
                           <button
                             onClick={() => openCommentModal(patient)}
-                            className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-md active:scale-95 cursor-pointer"
+                            className="inline-block px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
                           >
                             📝 Nota
                           </button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </main>
-        )}
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Modal Clínico con Fondo Opaco Sólido */}
+      {/* Modal — mismo lenguaje visual */}
       {isModalOpen && selectedPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-slate-900 border border-slate-700 max-w-lg w-full rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white border border-slate-200 max-w-lg w-full rounded-2xl shadow-2xl overflow-hidden">
             <form onSubmit={handleSaveComment} className="flex flex-col">
-              <div className="p-6 border-b border-slate-700 bg-slate-950">
-                <h3 className="text-xl font-bold text-white">
-                  Nueva Nota Médica
+              {/* Cabecera del modal */}
+              <div className="p-5 border-b border-slate-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                  Nueva Nota Clínica
+                </span>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight mt-2">
+                  {selectedPatient.name}
                 </h3>
-                <p className="text-sm text-slate-400 mt-1">
-                  Paciente:{" "}
-                  <span className="text-indigo-400 font-bold">
-                    {selectedPatient.name}
-                  </span>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  {selectedPatient.email}
                 </p>
               </div>
 
-              <div className="p-6 space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                  Escribe la Evolución
+              {/* Cuerpo */}
+              <div className="p-5 space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Evolución / Indicaciones
                 </label>
                 <textarea
                   required
-                  rows={6}
+                  rows={5}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 text-sm resize-none"
-                  placeholder="Diagnóstico, indicaciones, dosis..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Diagnóstico, indicaciones, dosis, observaciones..."
                 />
               </div>
 
-              <div className="px-6 py-4 bg-slate-950 border-t border-slate-700 flex justify-end gap-3">
+              {/* Footer del modal */}
+              <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2 text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-600"
+                  className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors shadow-md disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2 text-sm font-bold text-white bg-blue-700 hover:bg-blue-800 disabled:bg-blue-800/60 rounded-xl transition-colors shadow-sm"
                 >
                   {actionLoading ? "Guardando..." : "Guardar Nota"}
                 </button>

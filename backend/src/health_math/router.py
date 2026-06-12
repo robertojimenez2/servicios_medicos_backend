@@ -72,48 +72,6 @@ def log_user_weight(uid: str, payload: dict):
 def get_user_by_uid(uid: str):
     return services.get_user_by_uid(uid)
 
-# ... (El resto de tus rutas de pólizas, simulaciones, etc., se quedan intactas)
-
-@router.post("/policies", response_model=schemas.InsurancePolicyRead)
-def create_policy(policy: schemas.InsurancePolicyCreate):
-	
-	return services.create_policy(policy)
-
-
-@router.get("/policies", response_model=list[schemas.InsurancePolicyRead])
-def get_policies():
-	return services.list_policies()
-
-
-@router.post("/simulations", response_model=schemas.SimulationRead)
-def create_simulation(sim: schemas.SimulationCreate):
-	return services.create_simulation(sim)
-
-
-@router.get("/simulations", response_model=list[schemas.SimulationRead])
-def get_simulations():
-	return services.list_simulations()
-
-
-@router.post("/terms", response_model=schemas.TermDefinitionRead)
-def create_term(term: schemas.TermDefinitionCreate):
-	return services.create_term(term)
-
-
-@router.get("/terms", response_model=list[schemas.TermDefinitionRead])
-def get_terms():
-	return services.list_terms()
-
-
-@router.post("/scenarios", response_model=schemas.HealthConditionScenarioRead)
-def create_scenario(s: schemas.HealthConditionScenarioCreate):
-	return services.create_scenario(s)
-
-
-@router.get("/scenarios", response_model=list[schemas.HealthConditionScenarioRead])
-def get_scenarios():
-	return services.list_scenarios()
-
 
 @router.post("/users/{uid}/comments", status_code=201)
 def create_patient_comment(uid: str, payload: schemas.MedicalCommentCreate, doctor_uid):
