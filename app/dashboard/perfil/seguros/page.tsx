@@ -527,7 +527,7 @@ export default function SimuladorSeguroPage() {
 
           {/* Bloque informativo final */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+            <div className="p-4 border border-slate-100 bg-linear-to-br from-slate-50 to-white rounded-xl">
               <p className="text-xs font-bold text-slate-400 uppercase">
                 Cobertura Total
               </p>
@@ -542,7 +542,7 @@ export default function SimuladorSeguroPage() {
                 Suma asegurada fija por póliza estándar RobertCare.
               </p>
             </div>
-            <div className="p-4 border border-slate-100 bg-gradient-to-br from-slate-50 to-white rounded-xl">
+            <div className="p-4 border border-slate-100 bg-linear-to-br from-slate-50 to-white rounded-xl">
               <p className="text-xs font-bold text-slate-400 uppercase">
                 Costo Anual Estimado
               </p>

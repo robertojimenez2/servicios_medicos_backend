@@ -331,7 +331,7 @@ export default function AuthPage() {
                     className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
                     htmlFor="gender"
                   >
-                    Género Asignado al Nacer
+                    Sexo
                   </label>
                   <select
                     id="gender"
