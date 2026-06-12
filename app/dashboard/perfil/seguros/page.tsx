@@ -429,15 +429,15 @@ export default function SimuladorSeguroPage() {
                 Factor Edad
               </p>
               <p className="text-lg font-bold text-slate-700">
-                {(paciente?.age ?? 0 >= 75)
-                  ? "×8.5"
-                  : (paciente?.age ?? 0 >= 60)
-                    ? "×4.0"
-                    : (paciente?.age ?? 0 >= 45)
-                      ? "×1.8"
-                      : (paciente?.age ?? 0 >= 30)
-                        ? "×1.2"
-                        : "×1.0"}
+                {(paciente?.age ?? 0) >= 75
+                  ? "x8.5"
+                  : (paciente?.age ?? 0) >= 60
+                    ? "x4.0"
+                    : (paciente?.age ?? 0) >= 45
+                      ? "x1.8"
+                      : (paciente?.age ?? 0) >= 30
+                        ? "x1.2"
+                        : "x1.0"}
               </p>
             </div>
             <div className="p-3 bg-slate-50/50 rounded-xl">
